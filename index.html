@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Europa Voxel</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== In-game HUD ===== -->
+  <div id="hud" hidden>
+    <div id="place"><img id="place-flag" alt="" /><span id="place-name">France</span></div>
+    <div id="stamps-count">📘 <b id="stamps-n">0</b> / 8 stamps · <kbd>P</kbd> passport</div>
+    <div id="fps" hidden></div>
+    <div id="minimap-box" hidden>
+      <canvas id="minimap"></canvas>
+      <span class="mini-n">N</span>
+      <span class="mini-label" id="minimap-label"></span>
+    </div>
+  </div>
+  <div id="prompt" hidden></div>
+  <div id="banner" hidden><img id="banner-flag" alt="" /><div><small>Welcome to</small><strong id="banner-name"></strong></div></div>
+
+  <!-- ===== Welcome screen ===== -->
+  <section id="welcome">
+    <div class="welcome-curtain" id="welcome-curtain"></div>
+    <div class="welcome-side">
+      <div class="logo">
+        <p class="kicker">An English school project</p>
+        <h1>Europa<span>Voxel</span></h1>
+        <div class="logo-flags" id="logo-flags"></div>
+      </div>
+      <nav class="welcome-buttons">
+        <button id="play" class="big primary">▶&nbsp; Play</button>
+        <button id="open-wardrobe" class="big"><i>🧢</i> Customize Atlas</button>
+        <button id="new-game" class="big" hidden><i>📘</i> New passport</button>
+        <button data-open="settings" class="big"><i>⚙</i> Settings</button>
+        <button data-open="help" class="big"><i>❓</i> How to play</button>
+        <button id="quit-game" class="big" hidden><i>✕</i> Quit</button>
+      </nav>
+      <p class="credits">Made by our class · Europe 2026</p>
+    </div>
+    <div class="now-showing" id="now-showing">
+      <img id="now-flag" alt="" />
+      <div><small id="now-country"></small><strong id="now-name"></strong></div>
+    </div>
+  </section>
+
+  <!-- ===== Full screen menu: pause / settings / help ===== -->
+  <section id="menu" hidden>
+    <nav class="menu-nav">
+      <p class="kicker" id="menu-kicker">Game paused</p>
+      <h1 id="menu-title">Paused</h1>
+      <button class="primary" data-action="resume">▶&nbsp; Resume</button>
+      <button data-action="map">Map of Europe</button>
+      <button data-action="passport">Passport</button>
+      <button data-action="wardrobe">Customize Atlas</button>
+      <button data-open="settings">Settings</button>
+      <button data-open="help">How to play</button>
+      <button data-action="quit">Main menu</button>
+      <button data-action="back">← Back</button>
+    </nav>
+
+    <div class="menu-body">
+      <div id="sec-settings" class="section" hidden>
+        <h2>Settings</h2>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="graphics">Graphics</button>
+          <button class="tab" data-tab="audio">Audio</button>
+          <button class="tab" data-tab="controls">Controls</button>
+        </div>
+
+        <div class="tab-panel" data-panel="graphics">
+          <div class="row">
+            <label>Quality</label>
+            <div class="segmented">
+              <button data-quality="low">Low</button>
+              <button data-quality="medium">Medium</button>
+              <button data-quality="high">High</button>
+            </div>
+          </div>
+          <p class="note" id="quality-note">Low: no shadows, shorter view distance – for slow computers.</p>
+          <div class="row"><label for="s-fov">Field of view</label><input id="s-fov" type="range" min="50" max="90" step="1" data-setting="fov" data-unit="°" /><output></output></div>
+          <div class="row"><label for="s-fps">Show FPS</label><input id="s-fps" type="checkbox" data-setting="showFps" class="switch" /></div>
+        </div>
+
+        <div class="tab-panel" data-panel="audio" hidden>
+          <div class="row"><label for="s-master">Master volume</label><input id="s-master" type="range" min="0" max="1" step="0.05" data-setting="master" data-unit="%" /><output></output></div>
+          <div class="row"><label for="s-music">Music</label><input id="s-music" type="range" min="0" max="1" step="0.05" data-setting="music" data-unit="%" /><output></output></div>
+          <div class="row"><label for="s-sfx">Effects</label><input id="s-sfx" type="range" min="0" max="1" step="0.05" data-setting="sfx" data-unit="%" /><output></output></div>
+          <div class="row"><label for="s-voices">English voices (guides &amp; people)</label><input id="s-voices" type="checkbox" data-setting="voices" class="switch" /></div>
+          <div class="row"><label for="s-voice">Voice volume</label><input id="s-voice" type="range" min="0" max="1" step="0.05" data-setting="voice" data-unit="%" /><output></output></div>
+          <div class="row"><label for="s-amb">Ambience (sea, birds)</label><input id="s-amb" type="range" min="0" max="1" step="0.05" data-setting="ambience" data-unit="%" /><output></output></div>
+        </div>
+
+        <div class="tab-panel" data-panel="controls" hidden>
+          <div class="row"><label for="s-sens">Mouse sensitivity</label><input id="s-sens" type="range" min="0.3" max="2.5" step="0.1" data-setting="sensitivity" data-unit="x" /><output></output></div>
+          <div class="row"><label for="s-inv">Invert mouse Y</label><input id="s-inv" type="checkbox" data-setting="invertY" class="switch" /></div>
+        </div>
+      </div>
+
+      <div id="sec-help" class="section" hidden>
+        <h2>How to play</h2>
+        <p>You are <b>Atlas</b>, a young scout travelling across Europe. Every country is an island: explore it, talk to people,
+          take the city tour with the guide and then sail or fly to the next one!</p>
+        <div class="keys-grid">
+          <h3>On foot</h3>
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Move</span>
+          <span><kbd>Shift</kbd></span><span>Run</span>
+          <span><kbd>Space</kbd></span><span>Jump</span>
+          <span><kbd>Mouse</kbd> / <kbd>Wheel</kbd></span><span>Look around / zoom</span>
+          <span><kbd>E</kbd></span><span>Talk to people and to the guides</span>
+          <h3>Travelling</h3>
+          <span><kbd>E</kbd></span><span>Talk to the pilot (airport) or the captain (pier) and choose an island</span>
+          <span><kbd>Space</kbd></span><span>Skip the trip</span>
+          <h3>Drive it yourself (optional)</h3>
+          <span><kbd>F</kbd></span><span>Get out of the boat or plane</span>
+          <h3>Boat</h3>
+          <span><kbd>W</kbd> / <kbd>S</kbd></span><span>Speed up / slow down</span>
+          <span><kbd>A</kbd> / <kbd>D</kbd></span><span>Steer</span>
+          <h3>Plane</h3>
+          <span><kbd>W</kbd> / <kbd>S</kbd></span><span>Throttle up / down</span>
+          <span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Climb / descend (take off when fast!)</span>
+          <span><kbd>A</kbd> / <kbd>D</kbd></span><span>Turn</span>
+          <h3>Passport</h3>
+          <span><kbd>E</kbd></span><span>Take the city tour with the guide (yellow T-shirt and flag), then pass the test to win the country's stamp</span>
+          <span><kbd>P</kbd></span><span>Open your passport – collect all 8 stamps!</span>
+          <h3>Secrets</h3>
+          <span>🥚</span><span>Every island hides a funny easter egg about its country. Can you find all 8?</span>
+          <h3>Menus</h3>
+          <span><kbd>M</kbd></span><span>Map of Europe</span>
+          <span><kbd>Esc</kbd></span><span>Pause</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Wardrobe: customize Atlas ===== -->
+  <section id="wardrobe" hidden>
+    <div class="wd-stage">
+      <canvas id="wardrobe-canvas"></canvas>
+      <p class="wd-hint">Drag to turn Atlas around</p>
+    </div>
+    <div class="wd-panel">
+      <p class="kicker">Wardrobe</p>
+      <h2>Customize Atlas</h2>
+      <div class="tabs">
+        <button class="tab" data-wtab="look">😀 Look</button>
+        <button class="tab" data-wtab="clothes">👕 Clothes</button>
+        <button class="tab" data-wtab="extras">🎒 Extras</button>
+      </div>
+      <div id="wardrobe-options" class="wd-options"></div>
+      <div class="wd-actions">
+        <button id="wd-random">🎲 Random</button>
+        <button id="wd-reset">↺ Original Atlas</button>
+        <button id="wd-done" class="primary">✔ Done</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Easter egg found ===== -->
+  <div id="egg" hidden>
+    <span class="egg-icon">🥚</span>
+    <div><small id="egg-kicker"></small><strong id="egg-title"></strong><p id="egg-text"></p></div>
+  </div>
+
+  <!-- ===== Map ===== -->
+  <section id="map" hidden>
+    <canvas id="map-canvas"></canvas>
+    <div class="map-title"><p class="kicker">Map</p><h2>Europe</h2><p class="small">Press <kbd>M</kbd> or <kbd>Esc</kbd> to close</p></div>
+  </section>
+
+  <!-- ===== Guided tour (presentation) ===== -->
+  <section id="tour" hidden>
+    <div class="tour-bar top"></div>
+    <div class="tour-bar bottom"></div>
+    <div class="tour-title"><p class="kicker" id="tour-kicker"></p><h2 id="tour-name"></h2></div>
+    <div class="tour-sub" id="tour-sub">
+      <div class="tour-photo" id="tour-photo-box"><img id="tour-photo" alt="" /></div>
+      <div class="tour-main">
+        <div class="tour-head"><b id="tour-guide"></b><span id="tour-count"></span></div>
+        <p id="tour-text"></p>
+        <div class="tour-foot">
+          <div id="tour-dots" class="tour-dots"></div>
+          <div class="tour-buttons">
+            <button id="tour-prev">◀ Back</button>
+            <button id="tour-next" class="primary">Next ▶</button>
+            <button id="tour-end">End tour (Esc)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tour-test" class="tour-test" hidden>
+      <div class="panel test-card">
+        <div class="test-top">
+          <img id="test-photo" alt="" />
+          <div><p class="tag" id="test-kicker"></p><h2 id="test-title"></h2></div>
+          <span id="test-progress"></span>
+        </div>
+        <div id="test-body">
+          <h3 id="test-q"></h3>
+          <div id="test-options" class="quiz-options"></div>
+          <p id="test-feedback" class="quiz-feedback"></p>
+        </div>
+        <div id="test-result" class="test-result" hidden>
+          <div id="test-score" class="test-score"></div>
+          <p id="test-message"></p>
+        </div>
+        <div class="card-actions">
+          <button id="test-next" class="primary" hidden>Next question ▶</button>
+          <button id="test-retry" class="primary" hidden>Try the test again</button>
+          <button id="test-close">Close</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Talking to people ===== -->
+  <section id="dialog" hidden>
+    <div class="chat">
+      <aside class="chat-person" id="dialog-person">
+        <div class="chat-photo"><img id="dialog-photo" alt="" /></div>
+        <div class="chat-wave"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="chat-id">
+          <img id="dialog-flag" alt="" />
+          <div><p class="kicker" id="dialog-where"></p><h3 id="dialog-name"></h3></div>
+        </div>
+      </aside>
+      <div class="chat-panel">
+        <div class="chat-head"><span>💬 Chat</span><button id="dialog-close" aria-label="Close">✕</button></div>
+        <div id="dialog-log" class="chat-log"></div>
+        <p class="chat-hint">Choose a question:</p>
+        <div id="dialog-questions" class="chat-replies"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Travel: choose an island ===== -->
+  <section id="travel" hidden>
+    <div class="travel-map"><canvas id="travel-canvas"></canvas></div>
+    <aside class="travel-side">
+      <p class="kicker" id="travel-who"></p>
+      <h2 id="travel-title"></h2>
+      <p class="travel-help">Click an island on the map to choose your destination.</p>
+      <div id="travel-info" class="travel-info" hidden>
+        <img id="travel-flag" alt="" />
+        <p class="small">Destination</p>
+        <h3 id="travel-name"></h3>
+        <ul id="travel-sights"></ul>
+        <p id="travel-time" class="travel-time"></p>
+        <button id="travel-go" class="primary"></button>
+      </div>
+      <div class="travel-actions">
+        <button id="travel-self"></button>
+        <button id="travel-cancel">Cancel (Esc)</button>
+      </div>
+    </aside>
+  </section>
+  <div id="trip" hidden><span id="trip-text"></span> · Press <kbd>Space</kbd> to skip</div>
+  <div id="fade"></div>
+
+  <!-- ===== Passport ===== -->
+  <section id="passport" hidden>
+    <div class="passport-book">
+      <div class="pp-page pp-left">
+        <p class="pp-title">Explorer's Passport</p>
+        <div class="pp-id">
+          <div class="pp-photo"><img id="pp-photo" alt="Atlas" /></div>
+          <dl>
+            <dt>Name</dt><dd>Atlas</dd>
+            <dt>Job</dt><dd>Scout &amp; traveller</dd>
+            <dt>Travelling in</dt><dd>Europe</dd>
+            <dt>Stamps</dt><dd id="pp-count"></dd>
+            <dt>Easter eggs</dt><dd id="pp-eggs"></dd>
+          </dl>
+        </div>
+        <p class="pp-code">EUROPA&lt;&lt;VOXEL&lt;&lt;&lt;ATLAS&lt;&lt;SCOUT&lt;&lt;&lt;&lt;&lt;&lt;</p>
+      </div>
+      <div class="pp-page pp-right">
+        <p class="pp-title">Stamps</p>
+        <div id="pp-stamps" class="pp-stamps"></div>
+      </div>
+    </div>
+    <button id="passport-close" class="primary">Close (P)</button>
+  </section>
+
+  <!-- ===== Final screen ===== -->
+  <section id="finale" hidden>
+    <canvas id="confetti"></canvas>
+    <div class="finale-inner">
+      <p class="kicker">Congratulations!</p>
+      <h1>You explored<br /><span>Europe!</span></h1>
+      <p class="lead">Atlas collected all the stamps in the passport. Thank you for travelling with us!</p>
+      <ul id="finale-stats" class="finale-stats"></ul>
+      <div class="welcome-buttons">
+        <button id="finale-passport" class="primary">📘 See my passport</button>
+        <button id="finale-continue">Keep exploring</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

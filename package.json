@@ -1,0 +1,59 @@
+{
+  "name": "europa-voxel",
+  "productName": "Europa Voxel",
+  "version": "0.4.0",
+  "author": "Our class",
+  "description": "A voxel open world game about Europe – school English project",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=./",
+    "electron": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --win --config.electronDist=node_modules/electron/dist",
+    "voices": "node scripts/voice-script.js",
+    "make-voices": "node scripts/make-voices.js",
+    "test": "node js/voxel.test.js && node js/physics.test.js && node js/world.test.js"
+  },
+  "build": {
+    "appId": "it.scuola.europavoxel",
+    "productName": "Europa Voxel",
+    "files": [
+      "dist/**",
+      "!dist/voices/SCRIPT.txt",
+      "electron/**"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "portable"
+    },
+    "artifactName": "Europa-Voxel-${version}-${os}-${arch}.${ext}",
+    "publish": null,
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.educational-games",
+      "identity": null
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Game"
+    }
+  },
+  "devDependencies": {
+    "@breezystack/lamejs": "1.2.7",
+    "electron": "44.7.2",
+    "electron-builder": "26.15.3",
+    "kokoro-js": "1.2.1",
+    "three": "0.186.1",
+    "vite": "8.3.4"
+  }
+}

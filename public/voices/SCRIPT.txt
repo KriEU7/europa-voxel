@@ -1,0 +1,610 @@
+EUROPA VOXEL – VOICE SCRIPT
+Save every recording as an mp3 in public/voices/ with the file name shown.
+
+=== CITY TOURS (one voice per guide) ===
+
+--- Guide Sophie – Paris (eiffel) ---
+eiffel-1.mp3
+    Bonjour and welcome to Paris, the capital of France! I'm Sophie, and today I'll show you my city.
+
+eiffel-2.mp3
+    Paris is cut in two by the river Seine. There are 37 bridges across it, and the oldest one is called Pont Neuf, which means New Bridge!
+
+eiffel-3.mp3
+    This is the Eiffel Tower. It was built for the World's Fair of 1889 and it is about 330 metres tall. At first, many artists hated it!
+
+eiffel-4.mp3
+    Paris also has the Louvre, the biggest art museum in the world. Its most famous painting is the Mona Lisa, by Leonardo da Vinci.
+
+eiffel-5.mp3
+    On an island in the middle of the Seine there is Notre-Dame, a cathedral more than 800 years old. It was damaged by a fire in 2019 and opened again in 2024.
+
+eiffel-6.mp3
+    Parisians love cafés and bakeries: every neighbourhood has a boulangerie with fresh baguettes and croissants.
+
+eiffel-7.mp3
+    Paris is often called the City of Light. Now let's see what you remember: time for a little test!
+
+eiffel-test1.mp3   (test question)
+    Which river flows through Paris?
+
+eiffel-test2.mp3   (test question)
+    What is the most famous painting in the Louvre?
+
+eiffel-test3.mp3   (test question)
+    Why was the Eiffel Tower built?
+
+eiffel-test4.mp3   (test question)
+    What does Pont Neuf mean?
+
+eiffel-test5.mp3   (test question)
+    What is Paris often called?
+
+--- Guide Lotte – Brussels (atomium) ---
+atomium-1.mp3
+    Hello and welcome to Brussels, the capital of Belgium! I'm Lotte.
+
+atomium-2.mp3
+    Brussels is also called the capital of Europe, because important European institutions, like the European Commission, are here.
+
+atomium-3.mp3
+    This is the Atomium. It was built for Expo 58, the World's Fair of 1958, and it shows an iron crystal made 165 billion times bigger.
+
+atomium-4.mp3
+    In the old centre there is the Grand-Place, one of the most beautiful squares in the world. Every two years it is covered with a carpet of flowers!
+
+atomium-5.mp3
+    Near the square you can meet the Manneken Pis, a tiny statue of a boy doing a wee. He has more than a thousand costumes!
+
+atomium-6.mp3
+    Brussels is famous for chocolate, waffles and comics: there are big comic strip paintings on the walls of many buildings.
+
+atomium-7.mp3
+    Now let's check if you were listening. Here comes your test!
+
+atomium-test1.mp3   (test question)
+    Why is Brussels called the capital of Europe?
+
+atomium-test2.mp3   (test question)
+    For which event was the Atomium built?
+
+atomium-test3.mp3   (test question)
+    What covers the Grand-Place every two years?
+
+atomium-test4.mp3   (test question)
+    How many costumes does the Manneken Pis have?
+
+atomium-test5.mp3   (test question)
+    What can you see painted on many walls in Brussels?
+
+--- Guide Anouk – Amsterdam (windmills) ---
+windmills-1.mp3
+    Hoi! I'm Anouk. Welcome to the Netherlands! Let me tell you about Amsterdam, our capital.
+
+windmills-2.mp3
+    Amsterdam has more than 100 kilometres of canals and about 1,500 bridges. Its ring of canals is a UNESCO World Heritage Site.
+
+windmills-3.mp3
+    The city is built on millions of wooden poles pushed into the wet ground. The Royal Palace alone stands on almost 14,000 of them!
+
+windmills-4.mp3
+    In Amsterdam you can visit the house where Anne Frank hid during the Second World War, and the Van Gogh Museum.
+
+windmills-5.mp3
+    Here you see our windmills. A lot of the country is below sea level, and for centuries windmills pumped the water away to keep the land dry.
+
+windmills-6.mp3
+    There are more bicycles than people in the Netherlands, and in spring the tulip fields look like a rainbow.
+
+windmills-7.mp3
+    Okay, test time! Let's see how much you remember.
+
+windmills-test1.mp3   (test question)
+    How many bridges does Amsterdam have?
+
+windmills-test2.mp3   (test question)
+    What is Amsterdam built on?
+
+windmills-test3.mp3   (test question)
+    Whose house can you visit in Amsterdam?
+
+windmills-test4.mp3   (test question)
+    What did the windmills do?
+
+windmills-test5.mp3   (test question)
+    What do the tulip fields look like in spring?
+
+--- Guide Charlotte – London (bigben) ---
+bigben-1.mp3
+    Hello and welcome to London, the capital of the United Kingdom! I'm Charlotte.
+
+bigben-2.mp3
+    London is about two thousand years old: the Romans founded it and called it Londinium.
+
+bigben-3.mp3
+    This is the clock tower of the Houses of Parliament. Everybody calls it Big Ben, but Big Ben is really the name of the great bell inside!
+
+bigben-4.mp3
+    The King lives in Buckingham Palace, where you can watch the Changing of the Guard. The soldiers wear red jackets and tall black bearskin hats.
+
+bigben-5.mp3
+    London has the oldest underground railway in the world, called the Tube. It opened in 1863!
+
+bigben-6.mp3
+    Along the river Thames you can see Tower Bridge and the London Eye, a giant wheel 135 metres tall.
+
+bigben-7.mp3
+    Now, a cup of tea and a little test! Good luck!
+
+bigben-test1.mp3   (test question)
+    What did the Romans call London?
+
+bigben-test2.mp3   (test question)
+    What is Big Ben?
+
+bigben-test3.mp3   (test question)
+    Where does the King live?
+
+bigben-test4.mp3   (test question)
+    What is the London Underground called?
+
+bigben-test5.mp3   (test question)
+    Which river flows through London?
+
+--- Guide Jana – Berlin (brandenburg) ---
+brandenburg-1.mp3
+    Hallo! I'm Jana. Welcome to Berlin, the capital of Germany!
+
+brandenburg-2.mp3
+    This is the Brandenburg Gate, finished in 1791. On top there is the Quadriga, a chariot pulled by four horses.
+
+brandenburg-3.mp3
+    From 1961 to 1989 the Berlin Wall divided the city into East and West. Families and friends could not see each other.
+
+brandenburg-4.mp3
+    The Wall fell on the 9th of November 1989. Today you can still see a long piece of it, the East Side Gallery, covered with paintings.
+
+brandenburg-5.mp3
+    The Reichstag, the German parliament, has a big glass dome on top. Visitors can walk up inside it and look down at the politicians!
+
+brandenburg-6.mp3
+    Berliners love currywurst, a sausage with curry ketchup. And Berlin has more bridges than Venice!
+
+brandenburg-7.mp3
+    Ready? Let's do the test!
+
+brandenburg-test1.mp3   (test question)
+    What is on top of the Brandenburg Gate?
+
+brandenburg-test2.mp3   (test question)
+    When did the Berlin Wall fall?
+
+brandenburg-test3.mp3   (test question)
+    What is the East Side Gallery?
+
+brandenburg-test4.mp3   (test question)
+    What is on top of the Reichstag?
+
+brandenburg-test5.mp3   (test question)
+    What is a currywurst?
+
+--- Guide Jana – Bavaria (neuschwanstein) ---
+neuschwanstein-1.mp3
+    Now we are in Bavaria, in the south of Germany, near the Alps.
+
+neuschwanstein-2.mp3
+    This is Neuschwanstein Castle. King Ludwig the Second started building it in 1869. People called him the Fairy Tale King.
+
+neuschwanstein-3.mp3
+    The castle inspired Walt Disney's Sleeping Beauty Castle, and more than a million people visit it every year.
+
+neuschwanstein-4.mp3
+    The capital of Bavaria is Munich. Its town hall has a famous clock, the Glockenspiel, with little dancing figures.
+
+neuschwanstein-5.mp3
+    Munich is famous for the Oktoberfest, the biggest folk festival in the world. Funny fact: it starts in September!
+
+neuschwanstein-6.mp3
+    For festivals many Bavarians wear traditional clothes: leather trousers called Lederhosen, and dresses called Dirndl.
+
+neuschwanstein-7.mp3
+    Time for the test! Five questions, let's go!
+
+neuschwanstein-test1.mp3   (test question)
+    Who built Neuschwanstein Castle?
+
+neuschwanstein-test2.mp3   (test question)
+    Which famous castle did Neuschwanstein inspire?
+
+neuschwanstein-test3.mp3   (test question)
+    What is the capital of Bavaria?
+
+neuschwanstein-test4.mp3   (test question)
+    When does the Oktoberfest start?
+
+neuschwanstein-test5.mp3   (test question)
+    What are Lederhosen?
+
+--- Guide Marta – Barcelona (sagrada) ---
+sagrada-1.mp3
+    ¡Hola! I'm Marta. Welcome to Barcelona, a city between the mountains and the Mediterranean Sea!
+
+sagrada-2.mp3
+    This is the Sagrada Família, designed by Antoni Gaudí. Building started in 1882, and it is still not finished!
+
+sagrada-3.mp3
+    Gaudí designed many other buildings here, like Park Güell, with its colourful mosaic lizard, and Casa Batlló, which looks like a dragon.
+
+sagrada-4.mp3
+    The most famous street is La Rambla, full of people, flowers and street artists.
+
+sagrada-5.mp3
+    In Barcelona people speak two languages: Spanish and Catalan.
+
+sagrada-6.mp3
+    Barcelona has beaches in the city and a famous football team, FC Barcelona. Its stadium, Camp Nou, is the biggest in Europe!
+
+sagrada-7.mp3
+    ¡Vamos! Let's see what you remember with a quick test.
+
+sagrada-test1.mp3   (test question)
+    Who designed the Sagrada Família?
+
+sagrada-test2.mp3   (test question)
+    Which animal is the famous mosaic in Park Güell?
+
+sagrada-test3.mp3   (test question)
+    Which two languages are spoken in Barcelona?
+
+sagrada-test4.mp3   (test question)
+    What is La Rambla?
+
+sagrada-test5.mp3   (test question)
+    What is the name of Barcelona's football stadium?
+
+--- Guide Francesca – Rome (colosseum) ---
+colosseum-1.mp3
+    Ciao! I'm Francesca. Welcome to Rome, the capital of Italy, also called the Eternal City!
+
+colosseum-2.mp3
+    The legend says that Rome was founded in 753 BC by Romulus, who grew up with his brother Remus thanks to a she-wolf.
+
+colosseum-3.mp3
+    This is the Colosseum. It opened in the year 80, and up to fifty thousand people came here to watch gladiators fight.
+
+colosseum-4.mp3
+    Inside Rome there is a whole other country: Vatican City, the smallest country in the world, where the Pope lives.
+
+colosseum-5.mp3
+    If you throw a coin into the Trevi Fountain, the legend says you will come back to Rome. People throw in more than a million euros every year!
+
+colosseum-6.mp3
+    And of course, Rome is the place for pizza, pasta carbonara and gelato!
+
+colosseum-7.mp3
+    Now, a little test. In bocca al lupo: good luck!
+
+colosseum-test1.mp3   (test question)
+    What is Rome also called?
+
+colosseum-test2.mp3   (test question)
+    Who helped Romulus and Remus when they were babies?
+
+colosseum-test3.mp3   (test question)
+    What is the smallest country in the world?
+
+colosseum-test4.mp3   (test question)
+    What happens if you throw a coin into the Trevi Fountain?
+
+colosseum-test5.mp3   (test question)
+    When did the Colosseum open?
+
+--- Guide Francesca – Pisa (pisa) ---
+pisa-1.mp3
+    And now we are in Pisa, a city in Tuscany!
+
+pisa-2.mp3
+    The Leaning Tower is the bell tower of the cathedral. It stands in the Square of Miracles, together with the cathedral and the baptistery.
+
+pisa-3.mp3
+    Building started in 1173. After only three floors it began to lean, because the ground under it is too soft.
+
+pisa-4.mp3
+    The famous scientist Galileo Galilei was born in Pisa in 1564. A legend says he dropped balls from the tower to study how things fall!
+
+pisa-5.mp3
+    Pisa has one of the oldest universities in Italy, so the city is full of students.
+
+pisa-6.mp3
+    Engineers made the tower safer between 1990 and 2001. It still leans by about four degrees!
+
+pisa-7.mp3
+    Let's see if you were listening: here is your test!
+
+pisa-test1.mp3   (test question)
+    What is the Leaning Tower?
+
+pisa-test2.mp3   (test question)
+    Why does the tower lean?
+
+pisa-test3.mp3   (test question)
+    Which famous scientist was born in Pisa?
+
+pisa-test4.mp3   (test question)
+    What is the square of the tower called?
+
+pisa-test5.mp3   (test question)
+    How much does the tower lean today?
+
+--- Guide Katerina – Athens (parthenon) ---
+parthenon-1.mp3
+    Yia sou! I'm Katerina. Welcome to Athens, the capital of Greece and one of the oldest cities in the world!
+
+parthenon-2.mp3
+    Athens is named after Athena, the goddess of wisdom. The legend says she won a contest against Poseidon by giving the city an olive tree.
+
+parthenon-3.mp3
+    This is the Parthenon, a temple for Athena on the Acropolis hill. It was built about 2,500 years ago.
+
+parthenon-4.mp3
+    Democracy was born here! In ancient Athens, the citizens voted on the laws together.
+
+parthenon-5.mp3
+    The first modern Olympic Games were held in Athens in 1896, in the Panathenaic Stadium, made of marble.
+
+parthenon-6.mp3
+    In the Plaka, the old neighbourhood, you can eat souvlaki and Greek salad under the Acropolis.
+
+parthenon-7.mp3
+    Now let's play: five questions for you. Good luck!
+
+parthenon-test1.mp3   (test question)
+    Who is Athens named after?
+
+parthenon-test2.mp3   (test question)
+    What did Athena give to the city?
+
+parthenon-test3.mp3   (test question)
+    What was born in ancient Athens?
+
+parthenon-test4.mp3   (test question)
+    When were the first modern Olympic Games held in Athens?
+
+parthenon-test5.mp3   (test question)
+    Where is the Parthenon?
+
+=== PEOPLE: greetings ===
+
+--- France ---
+france-npc1.mp3   (Pierre the baker)
+    Bonjour! Would you like a baguette? French people buy billions of baguettes every year!
+
+france-npc2.mp3   (Claude the painter)
+    Salut! Many famous painters, like Monet, lived and worked in France.
+
+france-npc3.mp3   (Emma, a tourist)
+    Hi! I climbed the Eiffel Tower: it has 674 steps to the second floor!
+
+france-npc4.mp3   (Camille)
+    Bonjour! In France we eat cheese after dinner. There are more than 1,000 kinds!
+
+--- Belgium ---
+belgium-npc1.mp3   (Lucas the chocolatier)
+    Hallo! Belgium makes some of the best chocolate in the world. Try a praline!
+
+belgium-npc2.mp3   (Noah, a student)
+    Hi! Many students in Europe travel with the Erasmus programme. I study in Brussels!
+
+belgium-npc3.mp3   (Louis)
+    Bonjour! Did you know that the comic Tintin was created in Belgium?
+
+belgium-npc4.mp3   (Marie)
+    Welcome to Brussels, the capital of Europe!
+
+--- The Netherlands ---
+netherlands-npc1.mp3   (Daan)
+    Hallo! Orange is our national colour, because of the royal family, the House of Orange.
+
+netherlands-npc2.mp3   (Farmer Jan)
+    Goedendag! In spring our tulip fields look like a rainbow.
+
+netherlands-npc3.mp3   (Sanne)
+    Hoi! I go to school by bike every day, even when it rains!
+
+netherlands-npc4.mp3   (Bram)
+    Hi! Amsterdam has more than 100 kilometres of canals.
+
+--- United Kingdom ---
+uk-npc1.mp3   (The Royal Guard)
+    ... (Royal Guards are not allowed to talk while they are on duty!)
+
+uk-npc2.mp3   (Mr Smith)
+    Hello! Fancy a cup of tea? British people drink about 100 million cups a day!
+
+uk-npc3.mp3   (Olivia)
+    Hi there! London has a famous red double-decker bus.
+
+uk-npc4.mp3   (Jack, a tourist)
+    Hello, mate! In the UK we drive on the left side of the road.
+
+--- Germany ---
+germany-npc1.mp3   (Hans the hiker)
+    Hallo! Germany has many forests. The Black Forest is the most famous one.
+
+germany-npc2.mp3   (Greta the baker)
+    Guten Tag! Have you tried a pretzel? We call it Brezel.
+
+germany-npc3.mp3   (Lena)
+    Hallo! Many cars, like Volkswagen and BMW, come from Germany.
+
+germany-npc4.mp3   (Felix)
+    Hi! Berlin is the capital of Germany and it is full of history.
+
+--- Spain ---
+spain-npc1.mp3   (Lucía the dancer)
+    ¡Hola! Flamenco is a traditional dance from the south of Spain.
+
+spain-npc2.mp3   (Chef Javier)
+    ¡Hola! Paella is a rice dish from Valencia. Delicious!
+
+spain-npc3.mp3   (Pablo)
+    ¡Hola! In Spain many people have dinner very late, at 9 or 10 pm!
+
+spain-npc4.mp3   (Sofia, a tourist)
+    Hi! Spanish is spoken by more than 500 million people in the world.
+
+--- Italy ---
+italy-npc1.mp3   (Marco the gondolier)
+    Ciao! In Venice people move by boat, on the canals.
+
+italy-npc2.mp3   (Chef Giuseppe)
+    Buongiorno! Pizza was born in Naples. Mamma mia!
+
+italy-npc3.mp3   (Giulia)
+    Ciao! Italy has more than 50 UNESCO World Heritage Sites.
+
+italy-npc4.mp3   (Luca)
+    Ciao! Football is very popular in Italy. Forza Azzurri!
+
+--- Greece ---
+greece-npc1.mp3   (Nikos the fisherman)
+    Yia sou! Greek people have fished in these blue seas for thousands of years.
+
+greece-npc2.mp3   (Eleni)
+    Yia sou! The word "Europe" comes from Europa, a princess in Greek mythology.
+
+greece-npc3.mp3   (Yannis)
+    Hello! Greece produces a lot of olive oil. Olive trees can live for centuries!
+
+greece-npc4.mp3   (Anna, a tourist)
+    Hi! The white houses with blue doors on Santorini are so beautiful!
+
+=== PEOPLE: answers to the questions ===
+
+--- France ---
+france-q1-m.mp3 / france-q1-f.mp3   (Q: What do people eat here?)
+    Baguettes, cheese, croissants... and snails! Yes, escargots are a real French dish.
+
+france-q2-m.mp3 / france-q2-f.mp3   (Q: Tell me something funny!)
+    In France, April Fools' Day is called Poisson d'avril, April fish! Children stick paper fish on people's backs.
+
+france-q3-m.mp3 / france-q3-f.mp3   (Q: How do I say hello and thank you?)
+    Hello is Bonjour and thank you is Merci. When we meet friends, we often kiss them on both cheeks: la bise!
+
+france-q4-m.mp3 / france-q4-f.mp3   (Q: What do people do for fun?)
+    We watch the Tour de France, a bike race of about 3,500 kilometres in three weeks. My legs hurt just thinking about it!
+
+france-q5-m.mp3 / france-q5-f.mp3   (Q: Any tips for a tourist?)
+    Always say Bonjour when you walk into a shop. If you don't, people might think you are rude!
+
+--- Belgium ---
+belgium-q1-m.mp3 / belgium-q1-f.mp3   (Q: What do people eat here?)
+    Fries! We say Belgians invented them, not the French. And we eat them with mayonnaise.
+
+belgium-q2-m.mp3 / belgium-q2-f.mp3   (Q: Tell me something funny!)
+    The Manneken Pis is a tiny statue of a boy doing a wee. He has more than a thousand costumes!
+
+belgium-q3-m.mp3 / belgium-q3-f.mp3   (Q: How do I say hello and thank you?)
+    We have three languages! In Dutch: Hallo and Dank u. In French: Bonjour and Merci. In German: Hallo and Danke.
+
+belgium-q4-m.mp3 / belgium-q4-f.mp3   (Q: What do people do for fun?)
+    We read comics! The Smurfs and Tintin were both born in Belgium.
+
+belgium-q5-m.mp3 / belgium-q5-f.mp3   (Q: Any tips for a tourist?)
+    Try a real Belgian waffle. But be careful: in Brussels and in Liège they are different, and everybody says theirs is the best!
+
+--- The Netherlands ---
+netherlands-q1-m.mp3 / netherlands-q1-f.mp3   (Q: What do people eat here?)
+    Stroopwafels: two thin waffles with syrup in the middle. Put one on top of your hot drink to make it soft!
+
+netherlands-q2-m.mp3 / netherlands-q2-f.mp3   (Q: Tell me something funny!)
+    Dutch people are among the tallest people in the world. I have to duck under doors!
+
+netherlands-q3-m.mp3 / netherlands-q3-f.mp3   (Q: How do I say hello and thank you?)
+    Hallo and Dank je wel. Easy, right?
+
+netherlands-q4-m.mp3 / netherlands-q4-f.mp3   (Q: What do people do for fun?)
+    On King's Day, the 27th of April, everybody wears orange and the streets become one giant party and market!
+
+netherlands-q5-m.mp3 / netherlands-q5-f.mp3   (Q: Any tips for a tourist?)
+    Watch out for bikes! Bike lanes are everywhere and cyclists will not stop for you.
+
+--- United Kingdom ---
+uk-q1-m.mp3 / uk-q1-f.mp3   (Q: What do people eat here?)
+    Fish and chips! And a full English breakfast: eggs, bacon, sausages, beans, mushrooms and toast.
+
+uk-q2-m.mp3 / uk-q2-f.mp3   (Q: Tell me something funny!)
+    The King has two birthdays: his real one and an official one in summer, with a big parade!
+
+uk-q3-m.mp3 / uk-q3-f.mp3   (Q: How do I say hello and thank you?)
+    Hello and thank you, of course! But you can also say Cheers to say thank you.
+
+uk-q4-m.mp3 / uk-q4-f.mp3   (Q: What do people do for fun?)
+    Football! The modern rules of football were written in England in 1863. And we love talking about the weather.
+
+uk-q5-m.mp3 / uk-q5-f.mp3   (Q: Any tips for a tourist?)
+    On the escalators in London, always stand on the right, so people in a hurry can walk on the left!
+
+--- Germany ---
+germany-q1-m.mp3 / germany-q1-f.mp3   (Q: What do people eat here?)
+    Bread! Germany has more than three thousand kinds of bread. And of course pretzels and sausages.
+
+germany-q2-m.mp3 / germany-q2-f.mp3   (Q: Tell me something funny!)
+    Some German words are super long! Donaudampfschifffahrtsgesellschaft means Danube steamship company.
+
+germany-q3-m.mp3 / germany-q3-f.mp3   (Q: How do I say hello and thank you?)
+    Hallo or Guten Tag, and Danke for thank you.
+
+germany-q4-m.mp3 / germany-q4-f.mp3   (Q: What do people do for fun?)
+    In winter we go to Christmas markets to drink hot chocolate and eat gingerbread.
+
+germany-q5-m.mp3 / germany-q5-f.mp3   (Q: Any tips for a tourist?)
+    Be on time! In Germany being late is not cool. And on some motorways there is no speed limit, so stay in the right lane!
+
+--- Spain ---
+spain-q1-m.mp3 / spain-q1-f.mp3   (Q: What do people eat here?)
+    Paella, tapas, and churros with thick hot chocolate. Sometimes for breakfast!
+
+spain-q2-m.mp3 / spain-q2-f.mp3   (Q: Tell me something funny!)
+    On New Year's Eve we eat twelve grapes, one at each stroke of midnight, for good luck. Try to do it fast!
+
+spain-q3-m.mp3 / spain-q3-f.mp3   (Q: How do I say hello and thank you?)
+    ¡Hola! and Gracias. Easy and friendly!
+
+spain-q4-m.mp3 / spain-q4-f.mp3   (Q: What do people do for fun?)
+    Fiestas! In Buñol people throw tomatoes at each other, and in Valencia they burn giant statues during Las Fallas.
+
+spain-q5-m.mp3 / spain-q5-f.mp3   (Q: Any tips for a tourist?)
+    Don't go to a restaurant for dinner at seven: it will be empty! We have dinner at nine or ten.
+
+--- Italy ---
+italy-q1-m.mp3 / italy-q1-f.mp3   (Q: What do people eat here?)
+    Pizza, pasta and gelato! But please, never put pineapple on pizza.
+
+italy-q2-m.mp3 / italy-q2-f.mp3   (Q: Tell me something funny!)
+    For many Italians, cappuccino is only for breakfast. Ordering one after lunch is a little bit strange!
+
+italy-q3-m.mp3 / italy-q3-f.mp3   (Q: How do I say hello and thank you?)
+    Ciao means both hello and goodbye! And thank you is Grazie.
+
+italy-q4-m.mp3 / italy-q4-f.mp3   (Q: What do people do for fun?)
+    We talk with our hands! Italians have a gesture for almost everything. And we love football, of course.
+
+italy-q5-m.mp3 / italy-q5-f.mp3   (Q: Any tips for a tourist?)
+    Throw a coin into the Trevi Fountain in Rome: the legend says you will come back one day!
+
+--- Greece ---
+greece-q1-m.mp3 / greece-q1-f.mp3   (Q: What do people eat here?)
+    Souvlaki, feta cheese, olives and Greek salad. Yum!
+
+greece-q2-m.mp3 / greece-q2-f.mp3   (Q: Tell me something funny!)
+    In Greece, moving your head up can mean no! It can be very confusing for tourists.
+
+greece-q3-m.mp3 / greece-q3-f.mp3   (Q: How do I say hello and thank you?)
+    Yia sou means hello, and Efcharistó means thank you.
+
+greece-q4-m.mp3 / greece-q4-f.mp3   (Q: What do people do for fun?)
+    We dance! At some parties people used to break plates while dancing. Today they often throw flowers instead.
+
+greece-q5-m.mp3 / greece-q5-f.mp3   (Q: Any tips for a tourist?)
+    There are more than two hundred islands with people living on them. Take a ferry and visit a few!
