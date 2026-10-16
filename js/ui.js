@@ -14,7 +14,7 @@ const QUALITY_NOTES = {
   high: 'High: sharp shadows, waves and long view distance – needs a graphics card.',
 };
 
-export function createUI({ onResume, onQuit, onOpenMap, onOpenPassport, onOpenWardrobe }) {
+export function createUI({ onResume, onQuit, onOpenMap, onOpenPassport, onOpenWardrobe, onOpenAlbum }) {
   let mode = 'title'; // 'title' (from the welcome screen) or 'pause'
 
   // Little click/hover sounds on every button.
@@ -84,6 +84,7 @@ export function createUI({ onResume, onQuit, onOpenMap, onOpenPassport, onOpenWa
       if (a === 'map') onOpenMap();
       if (a === 'passport') onOpenPassport();
       if (a === 'wardrobe') onOpenWardrobe();
+      if (a === 'album') onOpenAlbum();
     };
 
   // ---- Map (M): the same illustrated map as the travel menu ----

@@ -1,12 +1,16 @@
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createWorld } from './world.js';
 import { eiffelTower, EIFFEL_COLLIDERS } from './models/france.js';
 import { atomium, colosseum, pisa, brandenburgGate, neuschwanstein, sagradaFamilia, windmill, parthenon, bigBen } from './models/monuments.js';
 import { createCharacter } from './models/character.js';
 import { EGG_BUILDERS, EGGS } from './models/eggs.js';
 import { createSeaCreatures } from './models/seacreatures.js';
-import { createBoat, createPlane } from './vehicles.js';
+import { createLife } from './life.js';
+import { createSky } from './sky.js';
+import { createKiosks, freeSpot } from './kiosks.js';
+import { createAlbum } from './album.js';
+import { createGames } from './games.js';
+import { createBoat, createPlane, createBalloon } from './vehicles.js';
 import { createPlayer } from './player.js';
 import { createNPCs } from './npc.js';
 import { createTravel } from './travel.js';
@@ -18,7 +22,7 @@ import { createMinimap } from './minimap.js';
 import { createWardrobe, loadLook } from './wardrobe.js';
 import { flagOf } from './flags.js';
 import { createUI } from './ui.js';
-import { initAudio, setVolumes, sounds, setEngine, updateAmbience } from './audio.js';
+import { initAudio, setVolumes, sounds, setEngine, updateAmbience, setMusic } from './audio.js';
 import { settings, hasSavedSettings, updateSetting, onSettingsChange, QUALITY } from './settings.js';
 import { COUNTRIES, PEOPLE } from './data/facts.js';
 
@@ -32,38 +36,9 @@ const gl = renderer.getContext();
 const gpuName = gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info')?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER);
 if (!hasSavedSettings && /SwiftShader|Basic Render|llvmpipe|Software/i.test(gpuName)) updateSetting('quality', 'low');
 
-const HORIZON = '#cdeeff';
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(HORIZON);
-scene.fog = new THREE.Fog(HORIZON, 90, 300);
-scene.add(new THREE.HemisphereLight('#ffffff', '#6a8f5a', 1.5));
-const sun = new THREE.DirectionalLight('#fff1d6', 2.2);
-sun.castShadow = true;
-Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 1, far: 400 });
-sun.shadow.bias = -0.0005;
-scene.add(sun, sun.target);
-
-// Sky: gradient dome + low poly clouds.
-const skyGeo = new THREE.SphereGeometry(900, 24, 12);
-const skyCols = [], top = new THREE.Color('#4fa8f0'), hor = new THREE.Color(HORIZON);
-for (let i = 0; i < skyGeo.attributes.position.count; i++) {
-  const c = hor.clone().lerp(top, Math.pow(Math.max(0, skyGeo.attributes.position.getY(i) / 900), 0.6));
-  skyCols.push(c.r, c.g, c.b);
-}
-skyGeo.setAttribute('color', new THREE.Float32BufferAttribute(skyCols, 3));
-const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
-scene.add(sky);
-const puffs = [];
-for (let i = 0; i < 40; i++) {
-  const x = -400 + ((i * 197) % 1400), z = -600 + ((i * 331) % 1300), y = 70 + (i % 5) * 9;
-  for (let k = 0; k < 4; k++) {
-    const g = new THREE.IcosahedronGeometry(5 + ((i + k) % 3) * 2, 0);
-    g.deleteAttribute('uv');
-    puffs.push(g.scale(1.4, 0.7, 1).translate(x + k * 6 - 9, y + (k % 2) * 2, z + (k % 3) * 3));
-  }
-}
-const clouds = new THREE.Mesh(mergeGeometries(puffs), new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true, emissive: '#555555' }));
-scene.add(clouds);
+const sky = createSky(scene);
+const sun = sky.sun;
 
 const camera = new THREE.PerspectiveCamera(settings.fov, 1, 0.1, 2000);
 
@@ -135,11 +110,16 @@ const eggs = world.islands.map((isl) => {
 
 // Sea easter eggs: Nessie & co. come up from the water now and then (found from the boat).
 const sea = createSeaCreatures(scene);
+const kiosks = createKiosks({ world });
+// A hot air balloon on the start island, near the Eiffel Tower.
+const balloonSpot = freeSpot(world, world.byId.france, 24, 48, 4);
+const balloon = balloonSpot && createBalloon(balloonSpot);
+const life = createLife({ world, scene, sounds });
 const seaSeen = new Set();
 
 // Islands with a harbour get a boat, islands with an airport get a plane.
 const fleet = world.islands.map((isl) => ({ isl, boat: isl.boatSpot && createBoat(isl.boatSpot), plane: isl.planeSpot && createPlane(isl.planeSpot) }));
-const vehicles = fleet.flatMap((f) => [f.boat, f.plane]).filter(Boolean);
+const vehicles = [...fleet.flatMap((f) => [f.boat, f.plane]), balloon].filter(Boolean);
 for (const v of vehicles) {
   scene.add(v.group);
   v.onCrash = () => sounds.crash();
@@ -174,7 +154,7 @@ const npcs = createNPCs(world, scene, PEOPLE);
 const playerCollider = { x: 0, z: 0, r: 0.4, top: 0 };
 const dynamicColliders = () => [
   ...npcs.colliders(),
-  ...vehicles.filter((v) => v.kind === 'plane' && v !== player.vehicle && !v.hidden).map((v) => ({ x: v.pos.x, z: v.pos.z, r: 2.4, top: v.pos.y + 2.5 })),
+  ...vehicles.filter((v) => v.kind !== 'boat' && v !== player.vehicle && !v.hidden).map((v) => ({ x: v.pos.x, z: v.pos.z, r: v.kind === 'plane' ? 2.4 : 1.4, top: v.pos.y + 2.5 })),
 ];
 const player = createPlayer({ atlas, camera, world, spawn: world.spawn, dom: canvas, sounds, dynamicColliders });
 player.teleport(world.spawn, Math.PI);
@@ -219,9 +199,35 @@ const dialog = createDialog({
   hooks: overlayHooks,
   onOpen: (n) => (npcs.talk(n, Infinity), passport.metPerson(n.name)),
   onClose: (n) => npcs.talk(n, 0),
+  extras: (n) => games.chatExtras(n),
 });
 const wardrobe = createWardrobe({ sounds, onDone: dress });
-if (import.meta.env.DEV) Object.assign(window.game, { tours, dialog, wardrobe, eggs, sea });
+let toastTimer = 0;
+function toast(text) {
+  $('toast').textContent = text;
+  $('toast').hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => ($('toast').hidden = true), 2500);
+}
+const album = createAlbum({ sounds, hooks: { ...overlayHooks, toast } });
+let photoRequest = false;
+const games = createGames({ world, npcs, life, passport, sounds, toast, showCard });
+// What is in the photo? The monument you are looking at, otherwise where you are.
+function photoCaption() {
+  const dir = camera.getWorldDirection(new THREE.Vector3()), len = Math.hypot(dir.x, dir.z) || 1;
+  let best = null, bestD = 90;
+  for (const m of monuments) {
+    const dx = m.x - camera.position.x, dz = m.z - camera.position.z, d = Math.hypot(dx, dz);
+    if (d < bestD && (dx * dir.x + dz * dir.z) / (d * len) > 0.6) (best = m), (bestD = d);
+  }
+  if (best) return `${best.name}, ${COUNTRIES[best.country].name}`;
+  const c = sea.list.find((c) => c.up > 0.5 && Math.hypot(c.x - camera.position.x, c.z - camera.position.z) < 120);
+  if (c) return c.title;
+  const isl = world.islandAt(player.position.x, player.position.z);
+  return isl ? `${sky.night > 0.6 ? 'A night' : 'A day'} in ${COUNTRIES[isl.cfg.id].name}` : player.vehicle?.kind === 'plane' ? 'Flying over the sea' : 'Sailing on the open sea';
+}
+document.getElementById('open-album').onclick = () => (passport.close(), album.open());
+if (import.meta.env.DEV) Object.assign(window.game, { tours, dialog, wardrobe, eggs, sea, life, sky, kiosks, games, balloon });
 
 // ---- Settings ------------------------------------------------------------------------
 let quality = QUALITY[settings.quality];
@@ -238,8 +244,6 @@ function applySettings() {
     renderer.shadowMap.enabled = shadows;
     scene.traverse((o) => o.material && (o.material.needsUpdate = true));
   }
-  scene.fog.near = quality.view * 0.35;
-  scene.fog.far = quality.view;
   camera.fov = settings.fov;
   camera.updateProjectionMatrix();
   setVolumes(settings);
@@ -259,6 +263,7 @@ const ui = createUI({
   onOpenMap: () => openMap(),
   onOpenPassport: () => (ui.closeMenu(), passport.openPassport()),
   onOpenWardrobe: () => wardrobe.open(),
+  onOpenAlbum: () => (ui.closeMenu(), album.open()),
 });
 $('open-wardrobe').onclick = () => wardrobe.open();
 $('logo-flags').append(...Object.keys(COUNTRIES).map((id) => Object.assign(document.createElement('img'), { src: flagOf(id), alt: '' })));
@@ -276,6 +281,11 @@ function showCard(icon, kicker, { title, text }) {
   sounds.welcome();
   clearTimeout(eggTimer);
   eggTimer = setTimeout(() => ($('egg').hidden = true), 12000);
+}
+function eat(k) {
+  sounds.eat();
+  const isNew = passport.tasteFood(k.id);
+  showCard(k.icon, isNew ? `🍽 New food! Food passport ${passport.foods} / ${kiosks.list.length}` : '🍽 Yum! Again!', { title: `${k.food} · ${COUNTRIES[k.id].name}`, text: k.text });
 }
 const showEgg = (e) => showCard('🥚', `🥚 Easter egg found! (${passport.eggs} / ${eggs.length})`, EGGS[e.id]);
 $('egg').onclick = () => ($('egg').hidden = true);
@@ -339,7 +349,7 @@ document.addEventListener('pointerlockchange', () => {
 
 addEventListener('keydown', (e) => {
   if (e.repeat) return;
-  if (e.code === 'KeyM' && started && !ui.menuOpen && !passport.open && !travel.menuOpen) return ui.mapOpen ? play() : openMap();
+  if (e.code === 'KeyM' && started && !ui.menuOpen && !passport.open && !travel.menuOpen && !album.isOpen) return ui.mapOpen ? play() : openMap();
   if (e.code === 'KeyP' && started && !ui.menuOpen && !ui.mapOpen && !travel.menuOpen)
     return passport.open ? passport.close() : playing && passport.openPassport();
   if (tours.active) {
@@ -350,6 +360,7 @@ addEventListener('keydown', (e) => {
   }
   if (dialog.isOpen) return e.code === 'Escape' && dialog.close();
   if (wardrobe.isOpen) return e.code === 'Escape' && wardrobe.close();
+  if (album.isOpen) return e.code === 'Escape' && album.close();
   if (e.code === 'Escape') {
     if (passport.open) return passport.close();
     if (travel.menuOpen) return travel.cancelMenu();
@@ -360,6 +371,7 @@ addEventListener('keydown', (e) => {
   if (!playing) return;
   if (e.code === 'Space' && travel.travelling) return travel.skip();
   if (e.code === 'KeyE' && interaction.e) interaction.e.run();
+  if (e.code === 'KeyC') photoRequest = true;
   if (e.code === 'KeyF' && interaction.f) interaction.f.run();
 });
 
@@ -375,12 +387,31 @@ function findInteractions(dt) {
     if (canExit) interaction.f = { label: `Press <kbd>F</kbd> – Get out`, run: () => player.exit() };
     return;
   }
+  if (player.seated) {
+    interaction.e = { label: `Press <kbd>E</kbd> – Stand up`, run: () => player.stand() };
+    return;
+  }
   let best = 3;
+  for (const b of currentIsland?.benches ?? []) {
+    const d = Math.hypot(b.x - p.x, b.z - p.z);
+    if (d < 1.8 && d < best) (best = d), (interaction.e = { label: `Press <kbd>E</kbd> – Sit on the bench`, run: () => player.sit(b) });
+  }
   for (const m of travel.crew) {
     const d = Math.hypot(m.pos.x - p.x, m.pos.z - p.z);
     if (d < best) {
       best = d;
       interaction.e = { label: `Press <kbd>E</kbd> – Talk to ${m.name} (${m.kind === 'plane' ? 'flights' : 'boat trips'})`, run: () => (sounds.talk(), travel.openMenu(m)) };
+    }
+  }
+  if (balloon && Math.hypot(balloon.pos.x - p.x, balloon.pos.z - p.z) < 3.2) {
+    best = Math.hypot(balloon.pos.x - p.x, balloon.pos.z - p.z);
+    interaction.e = { label: `Press <kbd>E</kbd> – Fly the hot air balloon 🎈`, run: () => (player.enter(balloon), toast('🎈 Space: burner (up) · Shift: down · W/A/S/D: drift · F: get out on land')) };
+  }
+  for (const k of kiosks.list) {
+    const d = Math.hypot(k.x - p.x, k.z - p.z);
+    if (d < best) {
+      best = d;
+      interaction.e = { label: `Press <kbd>E</kbd> – Taste the ${k.food.toLowerCase()} ${k.icon}`, run: () => eat(k) };
     }
   }
   for (const g of tours.guides) {
@@ -397,6 +428,7 @@ function findInteractions(dt) {
       interaction.e = { label: `Press <kbd>E</kbd> – Talk to ${n.name}`, run: () => dialog.open(n) };
     }
   }
+  interaction.e ??= games.interaction(player);
 }
 // ---- Welcome screen: a slow flight around every monument, one after the other ----------------
 const SHOT = 9; // seconds per monument
@@ -451,8 +483,10 @@ renderer.setAnimationLoop((now) => {
   for (const update of animated) update(dt);
   for (const e of eggs) if (e.isl.group.visible && Math.hypot(e.x - focus.x, e.z - focus.z) < 70) e.update(dt, t);
   sea.update(t);
+  life.update(dt, t, started ? player : { position: focus, vehicle: true });
+  kiosks.update(dt);
   travel.update(dt, focus);
-  if (playing) passport.tick(dt);
+  if (playing) passport.tick(dt), games.update(dt, t, player);
   if ((saveTimer += dt) > 15) (saveTimer = 0), passport.saveTime();
 
   if (started) {
@@ -466,16 +500,17 @@ renderer.setAnimationLoop((now) => {
     const isl = world.islandAt(focus.x, focus.z);
     if (isl !== currentIsland) {
       currentIsland = isl;
+      setMusic(isl?.cfg.id);
       if (isl) {
         ui.banner(isl.cfg.id);
         sounds.welcome();
       }
-      ui.setPlace(isl?.cfg.id, isl ? COUNTRIES[isl.cfg.id].name : player.vehicle?.kind === 'plane' ? 'Flying over the sea' : 'Open sea');
+      ui.setPlace(isl?.cfg.id, isl ? COUNTRIES[isl.cfg.id].name : player.vehicle && player.vehicle.kind !== 'boat' ? 'Flying over the sea' : 'Open sea');
     }
 
     // Engine sound
     const v = player.vehicle;
-    setEngine(v && playing ? v.kind : null, v ? Math.min(1, Math.abs(v.speed) / (v.kind === 'plane' ? 60 : 30)) : 0);
+    setEngine(v && playing ? v.kind : null, !v ? 0 : v.kind === 'balloon' ? +v.burning : Math.min(1, Math.abs(v.speed) / (v.kind === 'plane' ? 60 : 30)));
     updateAmbience(dt, !!isl && !v && playing);
 
     // Round minimap while on the boat or the plane
@@ -483,20 +518,21 @@ renderer.setAnimationLoop((now) => {
     if (v) {
       const dest = travel.destination;
       minimap.render({ x: v.pos.x, z: v.pos.z, heading: v.heading, kind: v.kind, dest });
-      const label = dest ? `${v.kind === 'plane' ? '✈' : '⚓'} to ${COUNTRIES[dest.cfg.id].name}` : v.kind === 'plane' ? '✈ Plane' : '⚓ Boat';
+      const label = dest ? `${v.kind === 'plane' ? '✈' : '⚓'} to ${COUNTRIES[dest.cfg.id].name}` : { plane: '✈ Plane', boat: '⚓ Boat', balloon: '🎈 Balloon' }[v.kind];
       if ($('minimap-label').textContent !== label) $('minimap-label').textContent = label;
     }
   }
 
-  // Sun and shadows follow the player, sky follows the camera.
-  sun.target.position.copy(focus);
-  sun.position.set(focus.x + 60, focus.y + 110, focus.z + 40);
-  sky.position.copy(camera.position);
-  clouds.position.x = Math.sin(t * 0.02) * 40;
+  // Sun, sky, day and night, weather (the welcome screen stays at noon).
+  sky.update(dt, t, focus, camera, {
+    view: quality.view, dayNight: settings.dayNight && started, weather: settings.weather,
+    place: started ? currentIsland?.cfg.id : null, frozen: !playing,
+  });
   world.update(t, focus, quality.view, quality.waves);
   for (const v of vehicles) v.group.visible = !v.hidden && Math.hypot(v.pos.x - focus.x, v.pos.z - focus.z) < quality.view + 50;
 
   renderer.render(scene, camera);
+  if (photoRequest) (photoRequest = false), album.snap(canvas, photoCaption());
 
   frames++;
   fpsTime += dt;

@@ -370,3 +370,35 @@ export const QUESTIONS = {
     { q: 'Any tips for a tourist?', a: 'There are more than two hundred islands with people living on them. Take a ferry and visit a few!' },
   ],
 };
+
+// ============================================================================
+//  FOOD KIOSKS – one stall on every island. Press E to taste the food and
+//  read a fact: every new food goes in the Food passport (🍽 n/8).
+// ============================================================================
+
+export const FOODS = {
+  france: { food: 'Croissant', icon: '🥐', text: "The croissant is the star of a French breakfast, but its grandfather is the kipferl from Austria! Croissant means 'crescent' in French, because of its moon shape." },
+  belgium: { food: 'Waffle', icon: '🧇', text: 'Belgium has two famous waffles: the Brussels waffle, light and rectangular, and the Liège waffle, sweeter, with pearls of sugar inside.' },
+  netherlands: { food: 'Stroopwafel', icon: '🍪', text: 'A stroopwafel is two thin waffles with caramel syrup in the middle. It comes from the city of Gouda. Put it on top of your hot drink to make it soft!' },
+  uk: { food: 'Fish and chips', icon: '🐟', text: 'Fish and chips is fried fish, usually cod or haddock, with chips. British people have eaten it since the 1860s, often with salt and vinegar.' },
+  germany: { food: 'Pretzel', icon: '🥨', text: 'The pretzel (Brezel in German) has a famous knot shape. In Bavaria people eat it with white sausages and sweet mustard.' },
+  spain: { food: 'Paella', icon: '🥘', text: 'Paella comes from Valencia, and paella is the name of the pan! The traditional recipe has rice, chicken, rabbit and green beans.' },
+  italy: { food: 'Gelato', icon: '🍨', text: 'Italian gelato has less air and less fat than ice cream, so the taste is stronger. Italians eat it all year round, even in winter!' },
+  greece: { food: 'Gyros', icon: '🥙', text: "Gyros is meat cooked on a turning spit and served in pita bread with tomato, onion and tzatziki, a sauce of yogurt, cucumber and garlic. Gyros means 'turn' in Greek." },
+};
+
+// ============================================================================
+//  MISSIONS – somebody on every island lost something (the first person who talks). Talk to them,
+//  find the object on the island, then bring it back. ⭐ in the passport!
+// ============================================================================
+
+export const MISSIONS = {
+  france: { item: 'paintbrush', icon: '🖌️', ask: "Oh là là! I lost my paintbrush and I can't finish my painting of the Eiffel Tower. Can you find it?", thanks: 'Merci beaucoup! Now I can finish my masterpiece!' },
+  belgium: { item: 'comic book', icon: '📕', ask: "I was reading my Tintin comic book and now it's gone! Can you look for it?", thanks: 'Thank you! Tintin and his dog Snowy are back with me!' },
+  netherlands: { item: 'wooden clog', icon: '👞', ask: 'I lost one of my wooden clogs! Walking with only one shoe is very hard. Can you find it?', thanks: 'Dank je wel! Clogs are perfect for walking on wet fields.' },
+  uk: { item: 'umbrella', icon: '☂️', ask: 'Where is my umbrella? In Britain it can rain at any moment! Can you help me find it?', thanks: "Thank you very much! Now I'm ready for the next shower." },
+  germany: { item: 'pocket watch', icon: '⌚', ask: 'I lost my watch, and the train leaves at eight o\'clock sharp! Please, can you find it?', thanks: 'Danke schön! Now I will be on time. In Germany we love being punctual!' },
+  spain: { item: 'guitar', icon: '🎸', ask: "My guitar is lost! I can't play flamenco without it. Can you find it for me?", thanks: '¡Muchas gracias! Olé! Now the party can start.' },
+  italy: { item: 'Vespa key', icon: '🔑', ask: 'Mamma mia! I lost the key of my Vespa. How can I ride around Rome now? Please help me!', thanks: 'Grazie mille! Now I can ride my scooter again. Ciao!' },
+  greece: { item: 'amphora', icon: '🏺', ask: 'I lost my amphora, an old Greek vase for olive oil. It belonged to my grandmother! Can you find it?', thanks: 'Efcharistó! You are a real hero, like Hercules!' },
+};

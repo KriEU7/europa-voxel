@@ -7,7 +7,7 @@ import { portrait } from './portrait.js';
 
 const $ = (id) => document.getElementById(id);
 
-export function createDialog({ sounds, hooks, onOpen, onClose }) {
+export function createDialog({ sounds, hooks, onOpen, onClose, extras }) {
   let npc = null, token = 0;
 
   function bubble(text, from) {
@@ -37,7 +37,14 @@ export function createDialog({ sounds, hooks, onOpen, onClose }) {
   function chips() {
     const id = npc.isl.cfg.id;
     const left = QUESTIONS[id].map((item, i) => ({ ...item, i })).filter((item) => !npc.asked.has(item.i));
+    // Extra buttons from the game (missions): run() changes the state, then the person answers.
+    const more = (extras?.(npc.ref) ?? []).map((x) =>
+      Object.assign(document.createElement('button'), {
+        textContent: x.q, className: 'extra',
+        onclick: () => (bubble(x.q, 'me'), x.run(), chips(), reply(x.a)),
+      }));
     $('dialog-questions').replaceChildren(
+      ...more,
       ...left.map((item) => {
         const b = Object.assign(document.createElement('button'), { textContent: item.q });
         b.onclick = () => {

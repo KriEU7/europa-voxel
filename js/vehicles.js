@@ -330,3 +330,92 @@ export function createPlane(spot) {
   plane.update(0, { forward: 0, turn: 0 }, { surfaceAt: () => spot.y }, 0);
   return plane;
 }
+
+// ---- Hot air balloon ------------------------------------------------------------------
+// Slow and panoramic: Space = burner (go up), Shift = let air out (go down), W/S and A/D = drift and turn.
+
+let balloonGeo;
+function buildBalloon() {
+  const v = createVoxels();
+  const STRIPES = ['#e53935', '#fdd835', '#1e88e5', '#ffffff'];
+  // Envelope: a big ball, a bit taller than wide, with vertical stripes, open at the bottom.
+  for (let x = -11; x <= 11; x++)
+    for (let y = -13; y <= 13; y++)
+      for (let z = -11; z <= 11; z++) {
+        const d = Math.hypot(x / 11, (y > 0 ? y / 13 : y / 12), z / 11);
+        if (d > 1 || d < 0.82 || y < -10) continue;
+        const a = Math.atan2(z, x) / (Math.PI * 2) + 0.5;
+        set(v, x, y + 28, z, STRIPES[Math.floor(a * 12) % 4]);
+      }
+  for (let y = 14; y <= 17; y++) for (const [x, z] of [[-4, -4], [3, -4], [-4, 3], [3, 3]]) set(v, x + (x < 0 ? (17 - y) * 0.5 : -(17 - y) * 0.5) | 0, y, z, '#5a3a20'); // ropes
+  for (let x = -4; x <= 3; x++)
+    for (let z = -4; z <= 3; z++)
+      for (let y = 0; y <= 4; y++) {
+        const wall = x === -4 || x === 3 || z === -4 || z === 3;
+        if (y === 0 || wall) set(v, x, y, z, (x + y + z) % 2 ? '#9c7a4a' : '#8a6a3e'); // wicker basket
+      }
+  box(v, -1, 12, -1, 0, 13, 0, '#555555'); // burner
+  return buildGeometry(v, 0.3);
+}
+
+export function createBalloon(spot) {
+  balloonGeo ??= buildBalloon();
+  const group = new THREE.Group();
+  const body = mesh(balloonGeo);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.25, 1, 6), new THREE.MeshBasicMaterial({ color: '#ffb02e' }));
+  flame.position.set(-0.15, 4.3, -0.15);
+  group.add(body, flame);
+  const pos = new THREE.Vector3(spot.x, spot.y, spot.z);
+  const vel = new THREE.Vector2();
+  let heading = spot.heading ?? 0, vy = 0, onGround = true;
+  const WIND = new THREE.Vector2(0.6, 0.25); // a light breeze always pushes a little
+
+  const balloon = {
+    kind: 'balloon', group, pos, home: spot,
+    seat: new THREE.Vector3(-0.15, 1.1, -0.15),
+    camDistance: 22,
+    hidden: false,
+    burning: false,
+    auto: false,
+    get speed() { return vel.length(); },
+    get heading() { return heading; },
+    update(dt, input, world) {
+      balloon.burning = !!input.up;
+      const target = input.up ? 3.5 : input.down ? -3 : onGround ? 0 : -0.5; // hot air cools down slowly
+      vy = lerp(vy, target, 1 - Math.exp(-dt * 1.2));
+      heading += input.turn * dt * 0.6;
+      if (!onGround) {
+        vel.x += (Math.sin(heading) * input.forward * 2 + WIND.x - vel.x * 0.25) * dt;
+        vel.y += (Math.cos(heading) * input.forward * 2 + WIND.y - vel.y * 0.25) * dt;
+      } else vel.multiplyScalar(Math.exp(-dt * 4));
+      const before = pos.clone();
+      pos.x += vel.x * dt;
+      pos.z += vel.y * dt;
+      pos.y = Math.min(90, pos.y + vy * dt);
+      if (hitTest(pos.clone().setY(pos.y + 1), 1.6, world.collidersNear(pos.x, pos.z))) { // bump: bounce back
+        pos.x = before.x;
+        pos.z = before.z;
+        vel.multiplyScalar(-0.5);
+      }
+      const ground = Math.max(world.surfaceAt(pos.x, pos.z), WATER_LEVEL - 0.3);
+      onGround = pos.y <= ground + 0.05;
+      if (onGround) (pos.y = ground), (vy = Math.max(vy, 0));
+      flame.visible = balloon.burning;
+      flame.scale.y = 0.8 + Math.random() * 0.5;
+      group.position.copy(pos);
+      group.rotation.set(Math.sin(performance.now() / 900) * (onGround ? 0 : 0.03), heading, 0);
+    },
+    exitPoint(world) {
+      if (!onGround) return null;
+      const side = new THREE.Vector3(Math.cos(heading), 0, -Math.sin(heading));
+      for (const p of [pos.clone().addScaledVector(side, 2.5), pos.clone().addScaledVector(side, -2.5)]) {
+        const ground = world.surfaceAt(p.x, p.z);
+        if (ground > WATER_LEVEL + 0.15) return p.setY(ground);
+      }
+      return null;
+    },
+    stop() { vel.set(0, 0); },
+  };
+  balloon.update(0, { forward: 0, turn: 0 }, { surfaceAt: () => spot.y, collidersNear: () => [] });
+  return balloon;
+}

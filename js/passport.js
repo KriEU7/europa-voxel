@@ -27,7 +27,7 @@ function load() {
 }
 
 export function createPassport({ sounds, hooks, onChange }) {
-  const fresh = () => ({ stamps: {}, facts: [], people: [], eggs: [], playSeconds: 0, finaleSeen: false });
+  const fresh = () => ({ stamps: {}, facts: [], people: [], eggs: [], foods: [], missions: {}, medals: [], playSeconds: 0, finaleSeen: false });
   let data = { ...fresh(), ...load() };
   const save = () => {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* private mode: progress not saved */ }
@@ -42,6 +42,9 @@ export function createPassport({ sounds, hooks, onChange }) {
     $('pp-photo').src = hooks.portrait();
     $('pp-count').textContent = `${count()} / ${IDS.length}`;
     $('pp-eggs').textContent = `🥚 ${data.eggs.length} / ${IDS.length}`;
+    $('pp-foods').textContent = `🍽 ${data.foods.length} / ${IDS.length}`;
+    $('pp-missions').textContent = `⭐ ${Object.keys(data.missions).length} / ${IDS.length}`;
+    $('pp-medals').textContent = `🏅 ${data.medals.length}`;
     $('pp-stamps').replaceChildren(
       ...IDS.map((id, i) => {
         const name = COUNTRIES[id].name;
@@ -80,6 +83,9 @@ export function createPassport({ sounds, hooks, onChange }) {
       build('li', {}, [build('b', {}, [String(data.facts.length)]), ' monuments discovered']),
       build('li', {}, [build('b', {}, [String(data.people.length)]), ' people met']),
       build('li', {}, [build('b', {}, [`${data.eggs.length}/${IDS.length}`]), ' easter eggs found']),
+      build('li', {}, [build('b', {}, [`${data.foods.length}/${IDS.length}`]), ' local foods tasted']),
+      build('li', {}, [build('b', {}, [`${Object.keys(data.missions).length}/${IDS.length}`]), ' missions completed']),
+      build('li', {}, [build('b', {}, [String(data.medals.length)]), ' mini-game medals']),
       build('li', {}, [build('b', {}, [String(minutes)]), ` minute${minutes > 1 ? 's' : ''} of travelling`]),
     );
     $('finale').hidden = false;
@@ -152,6 +158,28 @@ export function createPassport({ sounds, hooks, onChange }) {
       return true;
     },
     get eggs() { return data.eggs.length; },
+    // true the first time this island's food is tasted
+    tasteFood(id) {
+      if (data.foods.includes(id)) return false;
+      data.foods.push(id);
+      save();
+      return true;
+    },
+    get foods() { return data.foods.length; },
+    // mission(id) -> 'done' or undefined; mission(id, 'done') saves it
+    mission(id, state) {
+      if (state) (data.missions[id] = state), save();
+      return data.missions[id];
+    },
+    get missions() { return Object.keys(data.missions).length; },
+    hasMedal: (id) => data.medals.includes(id),
+    // true the first time this medal is won
+    medal(id) {
+      if (data.medals.includes(id)) return false;
+      data.medals.push(id);
+      save();
+      return true;
+    },
     metPerson(name) {
       if (!data.people.includes(name)) (data.people.push(name), save());
     },

@@ -8,7 +8,7 @@ export const QUALITY = {
 };
 
 const DEFAULTS = {
-  quality: 'high', fov: 65, showFps: false,
+  quality: 'high', fov: 65, showFps: false, dayNight: true, weather: true,
   master: 0.8, music: 0.5, sfx: 0.8, ambience: 0.6, voice: 1, voices: true,
   sensitivity: 1, invertY: false,
 };

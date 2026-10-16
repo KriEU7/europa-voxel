@@ -8,6 +8,7 @@ const WALK = 4.5, RUN = 9, JUMP = 10, GRAVITY = 28, RADIUS = 0.4;
 const COYOTE = 0.12; // you can still jump a moment after leaving an edge
 const BUFFER = 0.15; // a jump pressed just before landing still counts
 const MIN_ORBIT = 0.08;
+const SEAT_H = 0.5; // bench seat height for the sitting pose
 const damp = (k, dt) => 1 - Math.exp(-k * dt);
 
 export function createPlayer({ atlas, camera, world, spawn, dom, sounds, dynamicColliders }) {
@@ -16,7 +17,11 @@ export function createPlayer({ atlas, camera, world, spawn, dom, sounds, dynamic
   let velY = 0, onGround = true, coyote = 0, jumpBuffer = 0, airTime = 0;
   // pitch > 0: camera above Atlas looking down. pitch < 0: camera stays low and tilts up (to see tall monuments).
   let yaw = 0, pitch = 0.3, distance = 9, lastMouse = -10, time = 0;
-  let vehicle = null;
+  let vehicle = null, seat = null;
+  function stand() {
+    pos.set(seat.x + Math.sin(seat.heading) * 0.9, seat.y, seat.z + Math.cos(seat.heading) * 0.9);
+    seat = null;
+  }
   const camTarget = pos.clone().add(new THREE.Vector3(0, 1.6, 0));
   const camPos = new THREE.Vector3();
   let snapCamera = true;
@@ -48,6 +53,17 @@ export function createPlayer({ atlas, camera, world, spawn, dom, sounds, dynamic
   };
 
   function walk(dt, enabled) {
+    if (seat) {
+      // Sitting on a bench: any movement key stands up.
+      if (enabled && key('KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space')) stand();
+      else {
+        atlas.group.position.set(seat.x, seat.y + SEAT_H, seat.z);
+        atlas.group.rotation.y = seat.heading;
+        atlas.animate(dt, { sitting: true });
+        jumpBuffer = 0;
+        return;
+      }
+    }
     const input = new THREE.Vector2(
       enabled ? key('KeyD', 'ArrowRight') - key('KeyA', 'ArrowLeft') : 0,
       enabled ? key('KeyS', 'ArrowDown') - key('KeyW', 'ArrowUp') : 0,
@@ -128,6 +144,8 @@ export function createPlayer({ atlas, camera, world, spawn, dom, sounds, dynamic
       camTarget.z + Math.cos(yaw) * Math.cos(orbit) * dist,
     );
     want.y = Math.max(want.y, world.surfaceAt(want.x, want.z) + 0.6, WATER_LEVEL + 0.6);
+    for (const c of world.collidersNear(want.x, want.z)) // never inside a house
+      if (c.house && want.x > c.x0 - 0.5 && want.x < c.x1 + 0.5 && want.z > c.z0 - 0.5 && want.z < c.z1 + 0.5) want.y = Math.max(want.y, c.top + 0.8);
     camPos.lerp(want, snapCamera ? 1 : damp(20, dt));
     snapCamera = false;
     camera.position.copy(camPos);
@@ -142,6 +160,13 @@ export function createPlayer({ atlas, camera, world, spawn, dom, sounds, dynamic
     get vehicle() { return vehicle; },
     get facing() { return vehicle ? vehicle.heading : atlas.group.rotation.y; },
     get onGround() { return onGround; },
+    get seated() { return !!seat; },
+    sit(bench) {
+      seat = bench;
+      vel.set(0, 0);
+      pos.set(bench.x, bench.y, bench.z);
+    },
+    stand: () => seat && stand(),
     update(dt, enabled, t) {
       time += dt;
       if (vehicle) drive(dt, enabled, t);
@@ -166,7 +191,7 @@ export function createPlayer({ atlas, camera, world, spawn, dom, sounds, dynamic
       return true;
     },
     teleport(p, facing = 0) {
-      vehicle = null;
+      vehicle = seat = null;
       pos.copy(p);
       vel.set(0, 0);
       atlas.group.rotation.y = facing;

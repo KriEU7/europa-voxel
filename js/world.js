@@ -76,7 +76,7 @@ const inRect = (r, x, z) => r && x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z
 
 // ---- Low poly props ------------------------------------------------------------
 
-function part(geo, color) {
+export function part(geo, color) {
   geo = geo.index ? geo.toNonIndexed() : geo;
   if (geo.attributes.uv) geo.deleteAttribute('uv');
   geo.computeVertexNormals();
@@ -108,6 +108,55 @@ const TREES = {
     return g;
   },
 };
+
+// Village houses in the style of each country. front = +z.
+const HOUSES = {
+  france: { walls: ['#efe6d2', '#f4ecdc'], roof: ['#5d6d7e'], door: '#2f4f6f', chimney: true },
+  belgium: { walls: ['#b4643f', '#c47a52'], roof: ['#4a4a4a'], door: '#3e2723', chimney: true },
+  netherlands: { walls: ['#9c3d2a', '#7a2e22', '#b04a32'], roof: ['#3b3b3b'], door: '#2e7d32', tall: true },
+  uk: { walls: ['#f2efe6', '#b0503a'], roof: ['#c9a25a', '#4a4a4a'], door: '#c62828', chimney: true },
+  germany: { walls: ['#efe9dc'], roof: ['#8b3a2a'], door: '#4a2e1d', beams: '#4a2e1d', chimney: true },
+  spain: { walls: ['#f4efe3', '#efe0c4'], roof: ['#c8643c'], door: '#6d4c41' },
+  italy: { walls: ['#e3b26a', '#d9895b', '#eccb8f'], roof: ['#b85a35'], door: '#5d4037' },
+  greece: { walls: ['#ffffff'], dome: '#1f5fbf', door: '#1f5fbf' },
+};
+// Windows and lamps: their own material, so they can light up at night (sky.js).
+export const GLOW = new THREE.MeshLambertMaterial({ vertexColors: true });
+const WINDOW = '#9fd3f0';
+const boxAt = (w, h, d, x, y, z, color) => part(new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z), color);
+
+function house(style, r) {
+  const w = style.tall ? 3.6 : 4.4 + r * 1.2, d = 4.2, h = style.tall ? 4.6 : 2.8, F = 1.2; // F = foundation under the ground
+  const g = [boxAt(w, h + F, d, 0, -F, 0, style.walls[Math.floor(r * style.walls.length)])], glow = [];
+  g.push(boxAt(1, 1.7, 0.1, 0, 0, d / 2 + 0.03, style.door));
+  for (const x of style.tall ? [] : [-w / 2 + 0.9, w / 2 - 0.9]) glow.push(boxAt(0.8, 0.8, 0.1, x, 1, d / 2 + 0.03, WINDOW));
+  for (let y = 1; y < h - 0.5; y += 1.6) for (const z of [-0.9, 0.9]) for (const x of [-w / 2 - 0.03, w / 2 + 0.03]) glow.push(boxAt(0.1, 0.8, 0.8, x, y, z, WINDOW));
+  if (style.tall) glow.push(boxAt(0.9, 0.9, 0.1, 0, 2.6, d / 2 + 0.03, WINDOW));
+  if (style.beams) {
+    for (const x of [-w / 2, 0, w / 2]) g.push(boxAt(0.2, h, 0.1, x, 0, d / 2 + 0.06, style.beams));
+    g.push(boxAt(w, 0.2, 0.1, 0, h / 2, d / 2 + 0.06, style.beams), boxAt(w, 0.2, 0.1, 0, h - 0.2, d / 2 + 0.06, style.beams));
+  }
+  if (style.dome) {
+    g.push(boxAt(w + 0.2, 0.25, d + 0.2, 0, h, 0, '#f4f4f4'));
+    if (r < 0.5) g.push(part(new THREE.SphereGeometry(1.1, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, h + 0.2, 0), style.dome));
+    return { geo: g, glow, top: h + 1.3, w, d };
+  }
+  // Pitched roof: a triangle pushed along the depth of the house.
+  const rh = style.tall ? 2.4 : 1.8, o = 0.35;
+  const tri = new THREE.Shape([new THREE.Vector2(-w / 2 - o, 0), new THREE.Vector2(w / 2 + o, 0), new THREE.Vector2(0, rh)]);
+  g.push(part(new THREE.ExtrudeGeometry(tri, { depth: d + o * 2, bevelEnabled: false }).translate(0, h, -d / 2 - o), style.roof[Math.floor(r * 7) % style.roof.length]));
+  if (style.chimney) g.push(boxAt(0.6, 1.6, 0.6, w / 4, h + 0.6, -d / 4, '#8d6e63'));
+  return { geo: g, glow, top: h + rh, w, d };
+}
+
+function bench() {
+  const g = [boxAt(2, 0.12, 0.6, 0, 0.5, 0, '#a0714a'), boxAt(2, 0.45, 0.1, 0, 0.75, -0.28, '#a0714a')];
+  for (const x of [-0.85, 0.85]) g.push(boxAt(0.12, 0.5, 0.5, x, 0, 0, '#3a3a3a'), boxAt(0.12, 0.7, 0.1, x, 0.5, -0.28, '#3a3a3a'));
+  return mergeGeometries(g);
+}
+const lamp = () => mergeGeometries([cyl(0.1, 0.14, 3.4, '#33383d', 6), boxAt(0.7, 0.12, 0.7, 0, 3.8, 0, '#33383d')]);
+const lampLight = () => boxAt(0.5, 0.5, 0.5, 0, 3.3, 0, '#fff3b0');
+const umbrella = (color) => mergeGeometries([cyl(0.06, 0.06, 2.4, '#eeeeee', 4), cone(1.5, 0.6, 2.2, color, 8), boxAt(1.1, 0.05, 2, 1.3, 0, 0.4, color)]);
 
 function voxelFlag(id) {
   const vox = createVoxels(), W = 20, H = 13;
@@ -266,9 +315,74 @@ function makeIsland(cfg) {
   if (cfg.extras.includes('lavender')) fields.push({ x0: 18, x1: 38, z0: 6, z1: 30 });
   if (cfg.extras.includes('tulips')) fields.push({ x0: -36, x1: -16, z0: -30, z1: -12 }, { x0: -30, x1: -10, z0: 14, z1: 30 });
   const spots = cfg.spots ?? [];
-  const blocked = (x, z) =>
-    zones.some((zn) => zn.dist(x, z) < 4) || fields.some((f) => rectDist(f, x, z) < 1.5) || (pier && rectDist(pier, x, z) < 4) ||
-    spots.some(([sx, sz]) => Math.hypot(x - sx, z - sz) < 6);
+  const houses = []; // { x, z, r } local: keep trees and other things away
+  const glow = [];
+  const blocked = (x, z, gap = 4) =>
+    zones.some((zn) => zn.dist(x, z) < gap) || fields.some((f) => rectDist(f, x, z) < 1.5) || (pier && rectDist(pier, x, z) < 4) ||
+    spots.some(([sx, sz]) => Math.hypot(x - sx, z - sz) < 6) || houses.some((h) => Math.hypot(x - h.x, z - h.z) < h.r);
+  const flat = (x, z, r) => {
+    const ys = [[-r, -r], [r, -r], [-r, r], [r, r], [0, 0]].map(([a, b]) => surface(x + a, z + b));
+    return Math.max(...ys) - Math.min(...ys) < 2.4 ? Math.min(...ys) : null;
+  };
+
+  // A little village around the monument: houses facing the plaza (only 90° turns, so the collider stays a box).
+  // ponytail: greedy placement, nearest to the plaza first; no streets
+  const cand = [];
+  for (let x = -SIZE; x <= SIZE; x += 3)
+    for (let z = -SIZE; z <= SIZE; z += 3) {
+      const jx = x + rand(x, z, 11 + cfg.seed) * 2, jz = z + rand(x, z, 12 + cfg.seed) * 2;
+      cand.push([jx, jz, Math.hypot(jx - cfg.plaza.x, jz - cfg.plaza.z) - cfg.plaza.r + rand(x, z, 13) * 12]);
+    }
+  cand.sort((a, b) => a[2] - b[2]);
+  for (const [x, z] of cand) {
+    if (houses.length >= 13) break;
+    if (hasRunway && x > rw.x0 - 10 && x < rw.x1 + 10) continue; // keep the runway approach clear
+    const y = flat(x, z, 3);
+    if (y === null || y < 1.6 || y > cfg.height * 0.8 || blocked(x, z, 7)) continue;
+    const rot = Math.round(Math.atan2(cfg.plaza.x - x, cfg.plaza.z - z) / (Math.PI / 2)) * (Math.PI / 2);
+    const r = rand(x, z, 14), hs = house(HOUSES[cfg.id], r);
+    decor.push(mergeGeometries(hs.geo).rotateY(rot).translate(x, y, z));
+    glow.push(mergeGeometries(hs.glow).rotateY(rot).translate(x, y, z));
+    const [hw, hd] = Math.abs(Math.round(rot / (Math.PI / 2))) % 2 ? [hs.d, hs.w] : [hs.w, hs.d];
+    const [wx, wz] = W(x, z);
+    colliders.push({ x0: wx - hw / 2, x1: wx + hw / 2, z0: wz - hd / 2, z1: wz + hd / 2, top: y + hs.top, house: true });
+    houses.push({ x, z, r: Math.max(hw, hd) / 2 + 3.5 });
+  }
+
+  // Benches looking at the monument (you can sit on them) and street lamps around the plaza.
+  const benches = [];
+  const pa = Math.atan2(dx, dz); // direction of the port
+  for (let k = 0; k < 8; k++) {
+    const a = pa + Math.PI / 8 + (k * Math.PI) / 4, R = cfg.plaza.r + 2.5;
+    const x = cfg.plaza.x + Math.sin(a) * R, z = cfg.plaza.z + Math.cos(a) * R;
+    const y = surface(x, z);
+    if (y < 1.6 || zones.slice(1).some((zn) => zn.dist(x, z) < 3) || fields.some((f) => rectDist(f, x, z) < 2) || (pier && rectDist(pier, x, z) < 3) || inRect(cfg.lawn, x, z)) continue;
+    const [wx, wz] = W(x, z);
+    if (k % 2) {
+      decor.push(lamp().translate(x, y - 0.1, z));
+      glow.push(lampLight().translate(x, y - 0.1, z));
+      colliders.push({ x: wx, z: wz, r: 0.2, top: y + 3.8 });
+    } else {
+      const heading = a + Math.PI;
+      decor.push(bench().rotateY(heading).translate(x, y - 0.05, z));
+      colliders.push({ x: wx, z: wz, r: 0.6, top: y + 0.6 });
+      benches.push({ x: wx + Math.sin(heading) * 0.15, z: wz + Math.cos(heading) * 0.15, y, heading });
+    }
+    houses.push({ x, z, r: 2 });
+  }
+
+  // Beach umbrellas on the sunny islands.
+  if (['france', 'spain', 'italy', 'greece'].includes(cfg.id))
+    for (let i = 0, n = 0; i < 400 && n < 7; i++) {
+      const a = rand(i, 5, cfg.seed) * Math.PI * 2, d = cfg.R * (0.7 + rand(i, 6, cfg.seed) * 0.5);
+      const x = Math.sin(a) * d, z = Math.cos(a) * d, y = surface(x, z);
+      if (y < WATER_LEVEL + 0.3 || y > 1.35 || blocked(x, z)) continue;
+      decor.push(umbrella(['#e53935', '#fdd835', '#1e88e5', '#43a047', '#fb8c00'][n % 5]).rotateY(a).translate(x, y, z));
+      const [wx, wz] = W(x, z);
+      colliders.push({ x: wx, z: wz, r: 0.15, top: y + 2.6 });
+      houses.push({ x, z, r: 3 });
+      n++;
+    }
   for (let x = -SIZE; x <= SIZE; x += 3)
     for (let z = -SIZE; z <= SIZE; z += 3) {
       const jx = x + rand(x, z, 1 + cfg.seed) * 2, jz = z + rand(x, z, 2 + cfg.seed) * 2;
@@ -305,11 +419,28 @@ function makeIsland(cfg) {
         colliders.push({ x0: wx - 0.7, z0: wz - 0.7, x1: wx + 0.7, z1: wz + 0.7, top: cfg.lawn.h + 1.2 });
       }
 
+  // Small stuff on the grass: tufts, bushes and flowers (walk-through, no colliders).
+  const FLOWERS = ['#ffffff', '#fdd835', '#e53935', '#ec407a', '#ab47bc', '#ff8a65'];
+  const flowerSpots = [];
+  for (let x = -SIZE; x <= SIZE; x += 1.6)
+    for (let z = -SIZE; z <= SIZE; z += 1.6) {
+      const jx = x + rand(x, z, 21 + cfg.seed) * 1.4, jz = z + rand(x, z, 22 + cfg.seed) * 1.4, r = rand(x, z, 23 + cfg.seed);
+      if (r > 0.16) continue;
+      const y = surface(jx, jz);
+      if (y < 1.7 || blocked(jx, jz, 1) || zoneAt(jx, jz)) continue;
+      if (r < 0.08) decor.push(part(new THREE.ConeGeometry(0.3, 0.7, 4).translate(jx, y + 0.25, jz), rand(x, z, 24) < 0.5 ? '#3f8f3a' : '#57a845'));
+      else if (r < 0.135) {
+        const c = FLOWERS[Math.floor(rand(x, z, 25) * FLOWERS.length)];
+        for (let k = 0; k < 5; k++) decor.push(boxAt(0.3, 0.3, 0.3, jx + Math.sin(k * 2.5) * 0.6, y + 0.1 + (k % 2) * 0.12, jz + Math.cos(k * 2.5) * 0.6, c));
+        flowerSpots.push(W(jx, jz));
+      } else decor.push(ico(0.8, 0, '#3d8a35', 1, 0.7, 1).translate(jx, y + 0.3, jz));
+    }
+
   const group = new THREE.Group();
   group.position.set(ox, 0, oz);
   const decorMesh = new THREE.Mesh(mergeGeometries(decor), new THREE.MeshLambertMaterial({ vertexColors: true }));
   decorMesh.castShadow = decorMesh.receiveShadow = true;
-  group.add(terrain, decorMesh);
+  group.add(terrain, decorMesh, new THREE.Mesh(mergeGeometries(glow), GLOW));
 
   // Flag of the country
   const flag = voxelFlag(cfg.id);
@@ -320,7 +451,7 @@ function makeIsland(cfg) {
 
   const site = (s) => s && { x: s.x + ox, z: s.z + oz, y: s.h, r: s.r };
   return {
-    cfg, group, colliders, boatSpot, planeSpot,
+    cfg, group, colliders, boatSpot, planeSpot, benches, flowerSpots,
     pier: pierInfo,
     center: new THREE.Vector3(ox, 0, oz),
     radius: SIZE * 1.1,

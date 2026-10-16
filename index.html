@@ -56,6 +56,7 @@
       <button class="primary" data-action="resume">▶&nbsp; Resume</button>
       <button data-action="map">Map of Europe</button>
       <button data-action="passport">Passport</button>
+      <button data-action="album">Photo album</button>
       <button data-action="wardrobe">Customize Atlas</button>
       <button data-open="settings">Settings</button>
       <button data-open="help">How to play</button>
@@ -83,6 +84,8 @@
           </div>
           <p class="note" id="quality-note">Low: no shadows, shorter view distance – for slow computers.</p>
           <div class="row"><label for="s-fov">Field of view</label><input id="s-fov" type="range" min="50" max="90" step="1" data-setting="fov" data-unit="°" /><output></output></div>
+          <div class="row"><label for="s-day">Day and night</label><input id="s-day" type="checkbox" data-setting="dayNight" class="switch" /></div>
+          <div class="row"><label for="s-weather">Weather (rain in the UK…)</label><input id="s-weather" type="checkbox" data-setting="weather" class="switch" /></div>
           <div class="row"><label for="s-fps">Show FPS</label><input id="s-fps" type="checkbox" data-setting="showFps" class="switch" /></div>
         </div>
 
@@ -112,6 +115,7 @@
           <span><kbd>Space</kbd></span><span>Jump</span>
           <span><kbd>Mouse</kbd> / <kbd>Wheel</kbd></span><span>Look around / zoom</span>
           <span><kbd>E</kbd></span><span>Talk to people and to the guides</span>
+          <span><kbd>C</kbd></span><span>Take a photo (see them in the photo album)</span>
           <h3>Travelling</h3>
           <span><kbd>E</kbd></span><span>Talk to the pilot (airport) or the captain (pier) and choose an island</span>
           <span><kbd>Space</kbd></span><span>Skip the trip</span>
@@ -120,6 +124,9 @@
           <h3>Boat</h3>
           <span><kbd>W</kbd> / <kbd>S</kbd></span><span>Speed up / slow down</span>
           <span><kbd>A</kbd> / <kbd>D</kbd></span><span>Steer</span>
+          <h3>Hot air balloon (France)</h3>
+          <span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Burner: go up / let air out: go down</span>
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Drift and turn (the wind pushes you a little)</span>
           <h3>Plane</h3>
           <span><kbd>W</kbd> / <kbd>S</kbd></span><span>Throttle up / down</span>
           <span><kbd>Space</kbd> / <kbd>Shift</kbd></span><span>Climb / descend (take off when fast!)</span>
@@ -129,6 +136,10 @@
           <span><kbd>P</kbd></span><span>Open your passport – collect all 8 stamps!</span>
           <h3>Secrets</h3>
           <span>🥚</span><span>Every island hides a funny easter egg about its country. Can you find all 8?</span>
+          <span>🍽</span><span>Taste the local food at the stall of every island (<kbd>E</kbd>)</span>
+          <span>⭐</span><span>Somebody on every island lost something: talk to people and help them!</span>
+          <span>🏅</span><span>Mini-games: penalty kicks in Italy, Spain, the UK and Germany, the tulip hunt in the Netherlands</span>
+          <span>🪑</span><span>Sit on a bench (<kbd>E</kbd>), kick the beach ball, scare the pigeons!</span>
           <h3>Menus</h3>
           <span><kbd>M</kbd></span><span>Map of Europe</span>
           <span><kbd>Esc</kbd></span><span>Pause</span>
@@ -274,6 +285,9 @@
             <dt>Travelling in</dt><dd>Europe</dd>
             <dt>Stamps</dt><dd id="pp-count"></dd>
             <dt>Easter eggs</dt><dd id="pp-eggs"></dd>
+            <dt>Food</dt><dd id="pp-foods"></dd>
+            <dt>Missions</dt><dd id="pp-missions"></dd>
+            <dt>Medals</dt><dd id="pp-medals"></dd>
           </dl>
         </div>
         <p class="pp-code">EUROPA&lt;&lt;VOXEL&lt;&lt;&lt;ATLAS&lt;&lt;SCOUT&lt;&lt;&lt;&lt;&lt;&lt;</p>
@@ -283,8 +297,21 @@
         <div id="pp-stamps" class="pp-stamps"></div>
       </div>
     </div>
-    <button id="passport-close" class="primary">Close (P)</button>
+    <div class="pp-buttons"><button id="open-album">📷 Photo album</button><button id="passport-close" class="primary">Close (P)</button></div>
   </section>
+
+  <!-- ===== Photo album ===== -->
+  <section id="album" hidden>
+    <div class="album-book">
+      <p class="kicker">📷 Photo album</p>
+      <h2>My trip around Europe</h2>
+      <p id="album-empty" class="album-empty">No photos yet: press <kbd>C</kbd> while exploring to take one!</p>
+      <div id="album-grid" class="album-grid"></div>
+    </div>
+    <button id="album-close" class="primary">Close (Esc)</button>
+  </section>
+  <div id="flash"></div>
+  <div id="toast" hidden></div>
 
   <!-- ===== Final screen ===== -->
   <section id="finale" hidden>
