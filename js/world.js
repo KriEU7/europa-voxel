@@ -1,7 +1,7 @@
 // The archipelago: one low poly island per country, placed roughly like on a map of Europe.
 // Each island has: terrain, trees, a plaza for its monument, a pier with a boat spot, a runway, a flag.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createVoxels, set, buildMesh } from './voxel.js';
 import { FLAGS } from './flags.js';
 import { platformAt } from './physics.js';
@@ -69,23 +69,37 @@ const rand = (x, z, seed = 0) => {
 const noise = (x, z) => Math.sin(x * 0.11) * Math.cos(z * 0.09) + 0.5 * Math.sin(x * 0.23 + z * 0.19);
 const C = (hex) => new THREE.Color(hex);
 const SAND = C('#e9d79b'), GRAVEL = C('#d8c9a3'), LAWN = C('#7ccf52'), DIRT = C('#9a7550');
-const ASPHALT = C('#5b5f63'), PAINT = C('#f2f2f2');
+const ASPHALT = C('#5b5f63');
 
 const rectDist = (r, x, z) => Math.hypot(Math.max(r.x0 - x, 0, x - r.x1), Math.max(r.z0 - z, 0, z - r.z1));
 const inRect = (r, x, z) => r && x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1;
 
 // ---- Low poly props ------------------------------------------------------------
 
-export function part(geo, color) {
-  geo = geo.index ? geo.toNonIndexed() : geo;
+// One coloured piece. Painted look: every piece is darker at the bottom and lighter on top;
+// smooth = soft rounded shading (tree crowns, bushes) instead of flat facets.
+export function part(geo, color, smooth = false) {
   if (geo.attributes.uv) geo.deleteAttribute('uv');
-  geo.computeVertexNormals();
-  const c = C(color), n = geo.attributes.position.count, col = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) col.set([c.r, c.g, c.b], i * 3);
+  if (smooth) {
+    geo.deleteAttribute('normal');
+    geo = mergeVertices(geo);
+    geo.computeVertexNormals();
+    geo = geo.toNonIndexed();
+  } else {
+    geo = geo.index ? geo.toNonIndexed() : geo;
+    geo.computeVertexNormals();
+  }
+  geo.computeBoundingBox();
+  const { min, max } = geo.boundingBox, h = Math.max(1e-3, max.y - min.y);
+  const c = C(color), pos = geo.attributes.position, n = pos.count, col = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const t = (pos.getY(i) - min.y) / h, k = smooth ? 0.66 + 0.42 * t : 0.82 + 0.22 * t;
+    col.set([c.r * k, c.g * k, c.b * k], i * 3);
+  }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   return geo;
 }
-const ico = (r, y, color, sx = 1, sy = 1, sz = 1) => part(new THREE.IcosahedronGeometry(r, 0).scale(sx, sy, sz).translate(0, y, 0), color);
+const ico = (r, y, color, sx = 1, sy = 1, sz = 1) => part(new THREE.IcosahedronGeometry(r, 1).scale(sx, sy, sz).translate(0, y, 0), color, true);
 const cyl = (r0, r1, h, color, sides = 5) => part(new THREE.CylinderGeometry(r0, r1, h, sides).translate(0, h / 2, 0), color);
 const cone = (r, h, y, color, sides = 6) => part(new THREE.ConeGeometry(r, h, sides).translate(0, y + h / 2, 0), color);
 
@@ -97,8 +111,8 @@ const TREES = {
   umbrella: () => [part(new THREE.CylinderGeometry(0.15, 0.25, 4, 5).translate(0, 2, 0).rotateZ(0.12), '#6b4423'), ico(2.2, 4.3, '#4a7d3a', 1, 0.45, 1)],
   olive: (r) => [
     part(new THREE.CylinderGeometry(0.2, 0.35, 1.6, 5).translate(0, 0.8, 0).rotateZ(r - 0.5), '#7a6a55'),
-    part(new THREE.IcosahedronGeometry(1.0, 0).translate(0.5, 1.9, 0), '#8a9a5b'),
-    part(new THREE.IcosahedronGeometry(0.9, 0).translate(-0.6, 2.1, 0.3), '#7d8e50'),
+    part(new THREE.IcosahedronGeometry(1.0, 1).translate(0.5, 1.9, 0), '#8a9a5b', true),
+    part(new THREE.IcosahedronGeometry(0.9, 1).translate(-0.6, 2.1, 0.3), '#7d8e50', true),
   ],
   palm: () => {
     const g = [];
@@ -234,43 +248,53 @@ function makeIsland(cfg) {
     return fx + fz <= 1 ? a + (b - a) * fx + (c - a) * fz : d + (c - d) * (1 - fx) + (b - d) * (1 - fz);
   }
 
-  // Terrain: one flat colour per triangle.
-  const GA = C(cfg.grass[0]), GB = C(cfg.grass[1]), HILL = GA.clone().multiplyScalar(0.85);
+  // Terrain: smooth, with painted colour gradients (meadows, warm hills, rocky tops, wet sand, soft paths).
+  const GA = C(cfg.grass[0]), GB = C(cfg.grass[1]);
+  const HILL = GA.clone().lerp(C('#9a8f4e'), 0.35).multiplyScalar(0.85), ROCK = C('#a19a8c'), MEADOW = C('#c9d45c');
+  const WET = C('#cdb57c'), SHALLOW = C('#e3d6a4'), SEABED = C('#1d6f9a');
   const rw = cfg.runway, rwMid = (rw.x0 + rw.x1) / 2;
-  function faceColor(x, z, y, ny) {
-    const zone = zoneAt(x, z);
-    let c;
-    if (zone === 'runway') {
-      const edge = x < rw.x0 + 0.8 || x > rw.x1 - 0.8;
-      c = edge || (Math.abs(x - rwMid) < 1 && Math.floor(z / 4) % 2 === 0) ? PAINT : ASPHALT;
-    } else if (y < 1.4) c = SAND;
-    else if (zone === 'plaza') c = GRAVEL;
-    else if (zone === 'lawn') c = LAWN;
-    else if (ny < 0.8) c = DIRT;
-    else if (y > cfg.height * 0.7) c = HILL;
-    else c = GA.clone().lerp(GB, (noise(x * 0.7 + nx, z * 0.7) + 1.5) / 3);
-    return c.clone().multiplyScalar(0.96 + rand(x, z, 9) * 0.08);
+  const ss = THREE.MathUtils.smoothstep, down = (x, hi, lo) => 1 - ss(x, lo, hi); // down: 1 below lo, 0 above hi
+  function vertexColor(x, z, y, ny) {
+    // Grass: light and dark meadows, a few yellow flowery patches, warmer and darker uphill, rock on high tops.
+    const c = GA.clone().lerp(GB, ss(noise(x * 0.6 + nx, z * 0.6 + nz), -0.9, 0.9));
+    c.lerp(MEADOW, ss(noise(x * 0.27 + 40, z * 0.31 - nz), 0.75, 1.2) * 0.35);
+    const up = y / cfg.height;
+    c.lerp(HILL, ss(up, 0.45, 0.85));
+    if (cfg.height >= 12) c.lerp(ROCK, ss(up, 0.85, 1.05) * 0.8);
+    c.lerp(DIRT, down(ny, 0.9, 0.7)); // steep slopes show the earth
+    // Soft zones
+    const pd = Math.hypot(x - cfg.plaza.x, z - cfg.plaza.z) - cfg.plaza.r;
+    const sd = s2 ? Math.hypot(x - s2.x, z - s2.z) - s2.r : Infinity;
+    c.lerp(GRAVEL, ss(-Math.min(pd, sd), -1.5, 1));
+    if (cfg.lawn) c.lerp(Math.abs(x) < 2.5 ? GRAVEL : LAWN, ss(-rectDist(cfg.lawn, x, z) + (inRect(cfg.lawn, x, z) ? 1 : 0), -1, 0.5));
+    if (hasRunway) c.lerp(ASPHALT, ss(-rectDist(rw, x, z) + (inRect(rw, x, z) ? 1 : 0), -0.8, 0.5));
+    // Beach: dry sand, then wet sand at the water line, light sand under the shallow water.
+    c.lerp(SAND, down(y, 1.9, 1.25));
+    c.lerp(WET, down(y, 1.1, 0.75) * 0.8);
+    c.lerp(SHALLOW, down(y, 0.4, -0.6));
+    c.lerp(SEABED, down(y, -0.8, -2.6)); // deeper: the same blue as the sea floor
+    return c.multiplyScalar(0.97 + rand(x, z, 9) * 0.06);
   }
-  const pos = [], col = [];
-  const v = (i, j) => [-SIZE + i * CELL, grid[i * (N + 1) + j], -SIZE + j * CELL];
-  const A = new THREE.Vector3(), B = new THREE.Vector3(), Cv = new THREE.Vector3();
-  const tri = (a, b, c) => {
-    pos.push(...a, ...b, ...c);
-    A.set(...a), B.set(...b), Cv.set(...c);
-    const ny = B.sub(A).cross(Cv.sub(A)).normalize().y;
-    const color = faceColor((a[0] + b[0] + c[0]) / 3, (a[2] + b[2] + c[2]) / 3, (a[1] + b[1] + c[1]) / 3, ny);
-    for (let k = 0; k < 3; k++) col.push(color.r, color.g, color.b);
-  };
+  const V = N + 1, pos = new Float32Array(V * V * 3), col = new Float32Array(V * V * 3), index = [];
+  const hAt = (i, j) => grid[Math.min(N, Math.max(0, i)) * V + Math.min(N, Math.max(0, j))];
+  for (let i = 0; i <= N; i++)
+    for (let j = 0; j <= N; j++) {
+      const x = -SIZE + i * CELL, z = -SIZE + j * CELL, y = grid[i * V + j], k = (i * V + j) * 3;
+      const gx = hAt(i + 1, j) - hAt(i - 1, j), gz = hAt(i, j + 1) - hAt(i, j - 1);
+      const ny = (2 * CELL) / Math.hypot(gx, 2 * CELL, gz);
+      pos.set([x, y, z], k);
+      vertexColor(x, z, y, ny).toArray(col, k);
+    }
   for (let i = 0; i < N; i++)
     for (let j = 0; j < N; j++) {
-      const a = v(i, j), b = v(i + 1, j), c = v(i, j + 1), d = v(i + 1, j + 1);
-      if (Math.max(a[1], b[1], c[1], d[1]) < -2.9) continue;
-      tri(a, c, b);
-      tri(c, d, b);
+      const a = i * V + j, b = (i + 1) * V + j, c = a + 1, d = b + 1;
+      if (Math.max(grid[a], grid[b], grid[c], grid[d]) < -2.9) continue;
+      index.push(a, c, b, c, d, b);
     }
   const terrainGeo = new THREE.BufferGeometry();
-  terrainGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  terrainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  terrainGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  terrainGeo.setIndex(index);
   terrainGeo.computeVertexNormals();
   const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
   terrain.receiveShadow = true;
@@ -306,6 +330,12 @@ function makeIsland(cfg) {
     const perp = [dz, dx];
     boatSpot = { x: ox + coast[0] + dx * 11 + perp[0] * 4.2, z: oz + coast[1] + dz * 11 + perp[1] * 4.2, heading: Math.atan2(dx, dz) };
     pierInfo = { x: ox + coast[0], z: oz + coast[1], dx, dz }; // where the pier leaves the coast, and its direction
+  }
+
+  // Runway markings: white side lines and a dashed centre line.
+  if (hasRunway) {
+    for (const x of [rw.x0 + 0.5, rw.x1 - 0.5]) decor.push(boxAt(0.4, 0.04, rw.z1 - rw.z0 - 1, x, rw.h, (rw.z0 + rw.z1) / 2, '#f2f2f2'));
+    for (let z = rw.z0 + 3; z < rw.z1 - 2; z += 4) decor.push(boxAt(0.5, 0.04, 2, rwMid, rw.h, z, '#f2f2f2'));
   }
 
   const planeSpot = hasRunway ? { x: ox + rwMid, z: oz + rw.z0 + 7, heading: 0, y: rw.h } : null;
@@ -466,14 +496,63 @@ function makeIsland(cfg) {
   };
 }
 
-// Low poly sea that follows the camera, with waves computed in world space.
-function createSea() {
-  const STEP = 10;
+// Sea that follows the camera, with waves computed in world space. A height map of the islands
+// tells the water shader how deep it is: turquoise on the shallows, deep blue far away, foam on the coast.
+function createSea(islands, groundAt) {
+  const STEP = 10, RES = 1024, ENC = 20; // height map: (h + 4) * ENC in a byte
+  const min = new THREE.Vector2(Infinity, Infinity), max = new THREE.Vector2(-Infinity, -Infinity);
+  for (const i of islands) {
+    min.min(new THREE.Vector2(i.center.x - i.radius, i.center.z - i.radius));
+    max.max(new THREE.Vector2(i.center.x + i.radius, i.center.z + i.radius));
+  }
+  const size = max.clone().sub(min), data = new Uint8Array(RES * RES);
+  for (let j = 0; j < RES; j++)
+    for (let i = 0; i < RES; i++) {
+      const h = groundAt(min.x + ((i + 0.5) / RES) * size.x, min.y + ((j + 0.5) / RES) * size.y);
+      data[j * RES + i] = THREE.MathUtils.clamp(Math.round((h + 4) * ENC), 0, 255);
+    }
+  const heights = new THREE.DataTexture(data, RES, RES, THREE.RedFormat, THREE.UnsignedByteType);
+  heights.magFilter = heights.minFilter = THREE.LinearFilter;
+  heights.needsUpdate = true;
+
+  const uniforms = {
+    uHeights: { value: heights }, uMin: { value: min }, uSize: { value: size }, uTime: { value: 0 },
+    uDeep: { value: new THREE.Color('#1667b0') }, uShallow: { value: new THREE.Color('#38d1cf') },
+  };
+  const material = new THREE.MeshPhongMaterial({ color: '#2f9bd6', transparent: true, opacity: 0.88, flatShading: true, shininess: 140, specular: '#6f93a8' });
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vWorld;`)
+      .replace('#include <project_vertex>', `#include <project_vertex>
+vWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vWorld;
+        uniform sampler2D uHeights;
+        uniform vec2 uMin, uSize;
+        uniform float uTime;
+        uniform vec3 uDeep, uShallow;`)
+      .replace('vec4 diffuseColor = vec4( diffuse, opacity );', `
+        float ground = texture2D(uHeights, (vWorld.xz - uMin) / uSize).r * 255.0 / ${ENC}.0 - 4.0;
+        float depth = ${WATER_LEVEL.toFixed(2)} - ground;
+        float shallow = 1.0 - smoothstep(0.0, 4.0, depth);
+        // big slow patches of slightly different blue, like a painting
+        float patches = sin(vWorld.x * 0.013 + uTime * 0.05) * sin(vWorld.z * 0.017 - uTime * 0.04);
+        vec3 col = mix(uDeep * (0.92 + patches * 0.1), uShallow, shallow);
+        float wobble = sin(vWorld.x * 0.8 + uTime * 1.6) * 0.18 + sin(vWorld.z * 0.9 - uTime * 1.3) * 0.18;
+        float foam = (1.0 - smoothstep(0.05, 0.6, depth + wobble)) * step(-0.4, depth);
+        col = mix(col, vec3(0.93, 0.97, 1.0), foam * 0.8);
+        vec4 diffuseColor = vec4(col, mix(opacity * mix(1.0, 0.7, shallow), 0.95, foam));`);
+  };
+
   const geo = new THREE.PlaneGeometry(900, 900, 90, 90).rotateX(-Math.PI / 2);
   const base = geo.attributes.position.array.slice();
-  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: '#2f9bd6', transparent: true, opacity: 0.85, flatShading: true }));
+  const mesh = new THREE.Mesh(geo, material);
   mesh.position.y = WATER_LEVEL;
   mesh.update = (t, center, animate) => {
+    uniforms.uTime.value = t;
     mesh.position.x = Math.round(center.x / STEP) * STEP;
     mesh.position.z = Math.round(center.z / STEP) * STEP;
     const p = geo.attributes.position.array;
@@ -489,10 +568,9 @@ export function createWorld() {
   for (const isl of islands) group.add(isl.group);
   const seabed = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: '#1d6f9a' }));
   seabed.position.y = -3;
-  const sea = createSea();
-  group.add(seabed, sea);
-
   const islandNear = (x, z) => islands.find((i) => i.contains(x, z)) ?? null;
+  const sea = createSea(islands, (x, z) => islandNear(x, z)?.surface(x, z) ?? -3);
+  group.add(seabed, sea);
   const NONE = [];
 
   // Boat routes: out of the harbour, around any island in the way, into the other harbour.

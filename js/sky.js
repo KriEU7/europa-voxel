@@ -1,7 +1,7 @@
 // Sky, light and weather: a day goes by (sunset, stars, lamps and windows lit at night) and every
 // country has its own weather – showers over the UK, grey Belgium, hot blue sky in Spain and Greece.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLOW } from './world.js';
 import { setRain } from './audio.js';
 
@@ -22,17 +22,41 @@ const col = (h) => new THREE.Color(h);
 const DAYSKY = [col('#4fa8f0'), col('#cdeeff')], SUNSET = [col('#4a6aa8'), col('#ffb27a')], NIGHT = [col('#060e22'), col('#17243f')];
 const GREY = [col('#8d99a6'), col('#c3cad1')], HOT = [col('#2a86ec'), col('#d6f0ff')];
 
+// Soft round clouds: smooth shading, white on top and a bit lilac underneath.
+const TOP = col('#ffffff'), BELOW = col('#c4c9e4');
 function puffs(n, spread, y0, size) {
   const g = [];
   for (let i = 0; i < n; i++) {
     const x = -spread + ((i * 197) % (spread * 2)), z = -spread + ((i * 331) % (spread * 2)), y = y0 + (i % 5) * 9;
     for (let k = 0; k < 4; k++) {
-      const p = new THREE.IcosahedronGeometry(size + ((i + k) % 3) * 2, 0);
+      const r = size + ((i + k) % 3) * 2;
+      let p = new THREE.IcosahedronGeometry(r, 1);
       p.deleteAttribute('uv');
-      g.push(p.scale(1.4, 0.7, 1).translate(x + k * 6 - 9, y + (k % 2) * 2, z + (k % 3) * 3));
+      p.deleteAttribute('normal');
+      p = mergeVertices(p.scale(1.4, 0.7, 1));
+      p.computeVertexNormals();
+      const pos = p.attributes.position, c = new Float32Array(pos.count * 3);
+      for (let v = 0; v < pos.count; v++) TOP.clone().lerp(BELOW, THREE.MathUtils.smoothstep(-pos.getY(v) / (r * 0.7), -0.2, 0.9)).toArray(c, v * 3);
+      p.setAttribute('color', new THREE.BufferAttribute(c, 3));
+      g.push(p.translate(x + k * 6 - 9, y + (k % 2) * 2, z + (k % 3) * 3));
     }
   }
   return mergeGeometries(g);
+}
+
+// The sun (and the moon): a glowing disc drawn far away in the direction of the light.
+function glowSprite() {
+  const c = Object.assign(document.createElement('canvas'), { width: 256, height: 256 }), g = c.getContext('2d');
+  const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.18, 'rgba(255,255,240,1)');
+  grad.addColorStop(0.24, 'rgba(255,240,200,0.55)');
+  grad.addColorStop(1, 'rgba(255,220,160,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true }));
 }
 
 export function createSky(scene) {
@@ -53,10 +77,10 @@ export function createSky(scene) {
 
   const clouds = new THREE.Mesh(
     (() => { const g = puffs(40, 700, 70, 5); g.translate(300, 0, 50); return g; })(),
-    new THREE.MeshLambertMaterial({ color: '#ffffff', flatShading: true, emissive: '#555555' }),
+    new THREE.MeshLambertMaterial({ color: '#ffffff', vertexColors: true, emissive: '#555555' }),
   );
   // Dark rain clouds right above you when it rains.
-  const storm = new THREE.Mesh(puffs(14, 70, 38, 7), new THREE.MeshLambertMaterial({ color: '#6b7480', flatShading: true, transparent: true, opacity: 0, depthWrite: false }));
+  const storm = new THREE.Mesh(puffs(14, 70, 38, 7), new THREE.MeshLambertMaterial({ color: '#6b7480', vertexColors: true, transparent: true, opacity: 0, depthWrite: false }));
 
   // Stars: points on the upper half of a big sphere.
   const starPos = [];
@@ -77,11 +101,12 @@ export function createSky(scene) {
   const rainGeo = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
   const rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: '#d5dee8', transparent: true, opacity: 0 }));
   rain.frustumCulled = false;
-  scene.add(dome, clouds, storm, stars, rain);
+  const disc = glowSprite();
+  scene.add(dome, clouds, storm, stars, rain, disc);
 
   let phase = 0.06; // 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
   const W = { ...CLEAR };
-  const top = new THREE.Color(), hor = new THREE.Color(), tmp = new THREE.Color();
+  const top = new THREE.Color(), hor = new THREE.Color(), tmp = new THREE.Color(), tmp2 = new THREE.Vector3();
   const mix = (pair, k) => (top.lerp(pair[0], k), hor.lerp(pair[1], k));
 
   return {
@@ -124,6 +149,12 @@ export function createSky(scene) {
       sun.intensity = moon ? 0.35 * this.night : (0.2 + 2 * light) * gloom * (1 + W.sun * 0.12);
       sun.target.position.copy(focus);
       sun.position.set(focus.x + Math.cos(dir) * 80, focus.y + 30 + Math.abs(Math.sin(dir)) * 90, focus.z + 40);
+      // The glowing disc: big warm sun by day (orange at sunset), small pale moon at night.
+      const toSun = tmp2.set(Math.cos(dir) * 80, 30 + Math.abs(Math.sin(dir)) * 90, 40).normalize();
+      disc.position.copy(camera.position).addScaledVector(toSun, 700);
+      disc.scale.setScalar(moon ? 55 : 150);
+      disc.material.color.set(moon ? '#dfe6ff' : '#fff2cc').lerp(tmp.set('#ff9a50'), moon ? 0 : dusk);
+      disc.material.opacity = (moon ? this.night : 1) * (1 - Math.min(1, W.grey + wet) * 0.85);
       hemi.intensity = 1.5 * (0.4 + 0.6 * light) * (1 - wet * 0.15);
       hemi.color.set('#ffffff').lerp(tmp.set('#7f93c9'), this.night);
 
@@ -140,7 +171,7 @@ export function createSky(scene) {
       stars.position.copy(camera.position);
 
       // Windows and street lamps light up when it gets dark.
-      GLOW.emissive.setRGB(1, 0.78, 0.4).multiplyScalar(Math.max(this.night, wet * 0.3) * 0.95);
+      GLOW.emissive.setRGB(1, 0.78, 0.4).multiplyScalar(Math.max(this.night, wet * 0.3) * 1.3);
 
       // Rain
       rain.visible = wet > 0.02;

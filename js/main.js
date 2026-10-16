@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createWorld } from './world.js';
 import { eiffelTower, EIFFEL_COLLIDERS } from './models/france.js';
 import { atomium, colosseum, pisa, brandenburgGate, neuschwanstein, sagradaFamilia, windmill, parthenon, bigBen } from './models/monuments.js';
@@ -41,6 +45,11 @@ const sky = createSky(scene);
 const sun = sky.sun;
 
 const camera = new THREE.PerspectiveCamera(settings.fov, 1, 0.1, 2000);
+// Quality "High" only: a soft glow around the sun, lit windows and lamps.
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.5, 0.97));
+composer.addPass(new OutputPass());
 
 // ---- World ------------------------------------------------------------------------
 const world = createWorld();
@@ -234,6 +243,7 @@ let quality = QUALITY[settings.quality];
 function applySettings() {
   quality = QUALITY[settings.quality];
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatio));
+  composer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatio));
   const shadows = quality.shadows > 0;
   if (shadows) {
     sun.shadow.mapSize.set(quality.shadows, quality.shadows);
@@ -459,6 +469,7 @@ function welcomeCamera(t) {
 // ---- Loop ---------------------------------------------------------------------
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
+  composer.setSize(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
 }
@@ -531,7 +542,8 @@ renderer.setAnimationLoop((now) => {
   world.update(t, focus, quality.view, quality.waves);
   for (const v of vehicles) v.group.visible = !v.hidden && Math.hypot(v.pos.x - focus.x, v.pos.z - focus.z) < quality.view + 50;
 
-  renderer.render(scene, camera);
+  if (settings.quality === 'high') composer.render(dt);
+  else renderer.render(scene, camera);
   if (photoRequest) (photoRequest = false), album.snap(canvas, photoCaption());
 
   frames++;
