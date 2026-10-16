@@ -27,9 +27,10 @@ export function speak(text, { file, voice = 0, pitch = 1, rate = 0.95 } = {}) {
   const volume = settings.master * settings.voice;
   return new Promise((resolve) => {
     let fellBack = false;
-    const tts = () => {
+    const tts = (why) => {
       if (fellBack || job.stopped) return;
       fellBack = true;
+      if (file) console.warn(`Voice ${file} not played, using the computer voice:`, why); // Ctrl+Shift+I in the .exe
       const list = english();
       if (!list.length && window.nativeVoice) {
         // Electron app: Windows voices through the main process.
@@ -51,7 +52,7 @@ export function speak(text, { file, voice = 0, pitch = 1, rate = 0.95 } = {}) {
     const audio = (job.audio = new Audio(file));
     audio.volume = volume;
     audio.onended = () => resolve(true);
-    audio.onerror = tts;
+    audio.onerror = () => tts(audio.error);
     audio.play().catch(tts);
   });
 }
