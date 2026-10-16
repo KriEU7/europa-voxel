@@ -61,16 +61,66 @@ export function createPassport({ sounds, hooks, onChange }) {
       }),
     );
     $('passport').hidden = false;
-    if (newStamp) setTimeout(() => sounds.stamp(), 350);
+    if (newStamp) setTimeout(() => stampDown(document.querySelector('.stamp.new')), 350); // after the book has opened
     hooks.pause();
   }
   function closePassport() {
+    document.querySelector('.stamper')?.remove();
     $('passport').hidden = true;
     passportOpen = false;
     if (count() === IDS.length && !data.finaleSeen) return openFinale();
     hooks.resume();
   }
   $('passport-close').onclick = closePassport;
+
+  // A rubber stamp comes in, is inked, slams on the page, rocks a little and lifts away:
+  // the ink mark appears at the moment of the impact.
+  function stampDown(mark) {
+    if (!mark?.isConnected) return;
+    const r = mark.getBoundingClientRect(), tilt = parseFloat(mark.style.getPropertyValue('--tilt')) || 0;
+    const tool = build('div', { className: 'stamper' }, [
+      build('div', { className: 'stamper-shadow' }),
+      build('div', { className: 'stamper-body' }, [build('i', { className: 'knob' }), build('i', { className: 'neck' }), build('i', { className: 'block' }), build('i', { className: 'rubber' })]),
+    ]);
+    tool.style.setProperty('--ink', mark.style.getPropertyValue('--ink'));
+    tool.style.setProperty('--w', `${r.width}px`);
+    Object.assign(tool.style, { left: `${r.left + r.width / 2}px`, top: `${r.top + r.height / 2}px` });
+    document.body.append(tool);
+
+    const T = 2000, HIT = 0.56; // impact at 56% of the animation
+    const at = (x, y, rot, s = 1, sy = 1) => `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${s}, ${s * sy})`;
+    tool.lastChild.animate([
+      { offset: 0, transform: at(280, -420, tilt + 28, 1.3), opacity: 0 },
+      { offset: 0.15, opacity: 1 },
+      { offset: 0.38, transform: at(8, -150, tilt + 4, 1.15), easing: 'ease-out' }, // above the page
+      { offset: 0.5, transform: at(0, -185, tilt, 1.18), easing: 'cubic-bezier(0.6, 0, 1, 1)' }, // wind up...
+      { offset: HIT, transform: at(0, 0, tilt) }, // ...BANG
+      { offset: 0.6, transform: at(0, 0, tilt, 1, 0.93) }, // the rubber squashes
+      { offset: 0.67, transform: at(0, 0, tilt + 2.5) }, // rock it to print well
+      { offset: 0.74, transform: at(0, 0, tilt - 2.5) },
+      { offset: 0.8, transform: at(0, 0, tilt), opacity: 1, easing: 'ease-in' },
+      { offset: 1, transform: at(-60, -460, tilt - 18, 1.25), opacity: 0 },
+    ], { duration: T, fill: 'forwards' });
+    tool.firstChild.animate([
+      { offset: 0, transform: 'scale(1.8)', opacity: 0 },
+      { offset: 0.38, transform: 'scale(1.35)', opacity: 0.18 },
+      { offset: 0.5, transform: 'scale(1.45)', opacity: 0.15 },
+      { offset: HIT, transform: 'scale(0.95)', opacity: 0.45 },
+      { offset: 0.8, transform: 'scale(0.95)', opacity: 0.45 },
+      { offset: 1, transform: 'scale(2)', opacity: 0 },
+    ], { duration: T, fill: 'forwards' });
+
+    setTimeout(() => {
+      if (!tool.isConnected) return;
+      mark.classList.add('inked');
+      sounds.stamp();
+      document.querySelector('.passport-book').animate(
+        [{ transform: 'translate(0, 0)' }, { transform: 'translate(2px, 4px)' }, { transform: 'translate(-2px, -1px)' }, { transform: 'translate(0, 0)' }],
+        { duration: 180 },
+      );
+    }, T * HIT);
+    setTimeout(() => tool.remove(), T + 50);
+  }
 
   // ---- Final screen ------------------------------------------------------------------------
   let confettiFrame = 0;

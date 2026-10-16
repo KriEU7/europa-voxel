@@ -8,6 +8,16 @@
 </head>
 <body>
   <canvas id="game"></canvas>
+  <!-- Rough, patchy ink for the passport stamps -->
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <filter id="ink-rough">
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="3" result="grain" />
+      <feDisplacementMap in="SourceGraphic" in2="grain" scale="3" result="rough" />
+      <feTurbulence type="fractalNoise" baseFrequency="0.3" numOctaves="2" seed="9" result="spots" />
+      <feColorMatrix in="spots" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2.5 0 0 0 2" result="patches" />
+      <feComposite in="rough" in2="patches" operator="in" />
+    </filter>
+  </svg>
 
   <!-- ===== In-game HUD ===== -->
   <div id="hud" hidden>

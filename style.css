@@ -385,8 +385,29 @@ input.switch:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2
 .stamp b { font-size: 13px; letter-spacing: 1px; margin-top: 2px; }
 .stamp img { width: 26px; height: 17px; margin: 4px 0 2px; opacity: 0.85; image-rendering: pixelated; }
 .stamp small { font: 700 11px 'Consolas', monospace; }
-.stamp.new { animation: slam 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 0.15s both; }
-@keyframes slam { from { transform: rotate(var(--tilt)) scale(2.6); opacity: 0; } 60% { opacity: 1; } to { transform: rotate(var(--tilt)) scale(1); opacity: 0.88; } }
+.stamp { filter: url(#ink-rough); } /* uneven ink, like a real rubber stamp */
+.stamp.new:not(.inked) { visibility: hidden; }
+.stamp.inked { animation: wet-ink 1.6s ease-out; }
+@keyframes wet-ink { from { opacity: 1; } }
+
+/* The rubber stamp that prints a new stamp (passport.js – stampDown) */
+.stamper { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 5; }
+.stamper-shadow {
+  position: absolute; left: calc(var(--w) * -0.5); top: calc(var(--w) * -0.5); width: var(--w); height: var(--w);
+  border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7), transparent); opacity: 0;
+}
+.stamper-body { position: absolute; left: 0; top: 0; transform-origin: 0 0; opacity: 0; }
+.stamper-body i { position: absolute; display: block; left: 50%; transform: translateX(-50%); }
+.stamper .rubber { bottom: calc(var(--w) * -0.3); width: var(--w); height: 16px; border-radius: 0 0 50% 50% / 0 0 100% 100%; background: var(--ink); box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25); }
+.stamper .block {
+  bottom: calc(var(--w) * -0.3 + 10px); width: calc(var(--w) + 10px); height: calc(var(--w) * 0.45); border-radius: 10px;
+  background: linear-gradient(#d9a46c 0 22%, #b07b4a 22%, #8d6240); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.3), 0 4px 0 #5e3f26;
+}
+.stamper .neck { bottom: calc(var(--w) * 0.15 + 6px); width: 32px; height: 50px; background: linear-gradient(90deg, #7a5233, #b98552 45%, #7a5233); }
+.stamper .knob {
+  bottom: calc(var(--w) * 0.15 + 50px); width: 70px; height: 58px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e0b07a, #a0714a 55%, #6b4423); box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
 
 /* ===== Final screen ===== */
 #finale {
