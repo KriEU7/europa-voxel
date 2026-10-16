@@ -375,6 +375,8 @@ export function createCharacter(opts) {
     headG.rotation.y = lerp(-s * 0.06 * w, 0, air) + lookYaw;
     headG.rotation.x = -0.05 * w + Math.sin(t * 1.3) * 0.02 * (1 - w);
     hips.position.y = hips.userData.pivot.y + (1 - Math.cos(2 * phase)) * 0.035 * w - squash * 0.12 - sit * 0.55;
+    // The legs hang from the group, so they must sink with the hips or the thighs end up in the chest.
+    legL.position.y = legR.position.y = legL.userData.pivot.y - sit * 0.55;
     hips.scale.y = 1 + Math.sin(t * 2.2) * 0.008 * (1 - w) - squash * 0.06;
   }
 
