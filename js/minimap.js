@@ -1,4 +1,5 @@
 // Round minimap, shown while you are on the boat or the plane. North is always up.
+import { drawCreatures } from './models/seacreatures.js';
 import { COUNTRIES } from './data/facts.js';
 import { flagImg } from './flags.js';
 
@@ -60,6 +61,8 @@ export function createMinimap(world) {
       g.strokeText(COUNTRIES[isl.cfg.id].name, sx, sy + 8);
       g.fillText(COUNTRIES[isl.cfg.id].name, sx, sy + 8);
     }
+
+    drawCreatures(g, toScreen, performance.now() / 1000, 0.75);
 
     // Destination: a marker, or an arrow on the edge when it is far away
     if (dest) {

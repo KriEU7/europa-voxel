@@ -43,7 +43,7 @@ export const EGGS = {
 // ---- Helpers ------------------------------------------------------------------------
 
 const shadowed = (o) => (o.traverse((m) => m.isMesh && (m.castShadow = m.receiveShadow = true)), o);
-function vox(size, draw) {
+export function vox(size, draw) {
   const v = createVoxels();
   draw(v);
   return shadowed(buildMesh(v, size));
@@ -53,7 +53,7 @@ const hash = (x, y, z = 0) => {
   return h - Math.floor(h);
 };
 // Thick line from a to b ([x, y, z] in voxels).
-function line(v, a, b, r, color) {
+export function line(v, a, b, r, color) {
   const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) * 2));
   const R = Math.ceil(r);
   for (let i = 0; i <= n; i++) {

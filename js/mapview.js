@@ -1,5 +1,6 @@
 // Illustrated map of the archipelago, drawn on a canvas.
 // Used by the travel menu (pilot / captain) and by the map (M).
+import { drawCreatures } from './models/seacreatures.js';
 import { COUNTRIES } from './data/facts.js';
 import { flagImg } from './flags.js';
 
@@ -212,6 +213,8 @@ export function createMapView(canvas, world) {
       if (here) pill(g, c.x, c.y + isl.cfg.R * k + 20, 'You are here', { bg: '#1c2f5e', color: '#ffffff' });
       g.globalAlpha = 1;
     }
+
+    drawCreatures(g, (x, z) => [sx(x), sz(z)], t, 1);
 
     // Player arrow (map M)
     if (state.player) {

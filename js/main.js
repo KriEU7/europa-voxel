@@ -5,6 +5,7 @@ import { eiffelTower, EIFFEL_COLLIDERS } from './models/france.js';
 import { atomium, colosseum, pisa, brandenburgGate, neuschwanstein, sagradaFamilia, windmill, parthenon, bigBen } from './models/monuments.js';
 import { createCharacter } from './models/character.js';
 import { EGG_BUILDERS, EGGS } from './models/eggs.js';
+import { createSeaCreatures } from './models/seacreatures.js';
 import { createBoat, createPlane } from './vehicles.js';
 import { createPlayer } from './player.js';
 import { createNPCs } from './npc.js';
@@ -132,6 +133,10 @@ const eggs = world.islands.map((isl) => {
   return { id: isl.cfg.id, isl, x, z, ...e };
 });
 
+// Sea easter eggs: Nessie & co. come up from the water now and then (found from the boat).
+const sea = createSeaCreatures(scene);
+const seaSeen = new Set();
+
 // Islands with a harbour get a boat, islands with an airport get a plane.
 const fleet = world.islands.map((isl) => ({ isl, boat: isl.boatSpot && createBoat(isl.boatSpot), plane: isl.planeSpot && createPlane(isl.planeSpot) }));
 const vehicles = fleet.flatMap((f) => [f.boat, f.plane]).filter(Boolean);
@@ -216,7 +221,7 @@ const dialog = createDialog({
   onClose: (n) => npcs.talk(n, 0),
 });
 const wardrobe = createWardrobe({ sounds, onDone: dress });
-if (import.meta.env.DEV) Object.assign(window.game, { tours, dialog, wardrobe, eggs });
+if (import.meta.env.DEV) Object.assign(window.game, { tours, dialog, wardrobe, eggs, sea });
 
 // ---- Settings ------------------------------------------------------------------------
 let quality = QUALITY[settings.quality];
@@ -262,15 +267,17 @@ $('quit-game').onclick = () => window.close();
 
 // Easter egg found: a little card at the top of the screen.
 let eggTimer = 0;
-function showEgg(e) {
-  $('egg-kicker').textContent = `🥚 Easter egg found! (${passport.eggs} / ${eggs.length})`;
-  $('egg-title').textContent = EGGS[e.id].title;
-  $('egg-text').textContent = EGGS[e.id].text;
+function showCard(icon, kicker, { title, text }) {
+  document.querySelector('.egg-icon').textContent = icon;
+  $('egg-kicker').textContent = kicker;
+  $('egg-title').textContent = title;
+  $('egg-text').textContent = text;
   $('egg').hidden = false;
   sounds.welcome();
   clearTimeout(eggTimer);
   eggTimer = setTimeout(() => ($('egg').hidden = true), 12000);
 }
+const showEgg = (e) => showCard('🥚', `🥚 Easter egg found! (${passport.eggs} / ${eggs.length})`, EGGS[e.id]);
 $('egg').onclick = () => ($('egg').hidden = true);
 
 function updateStamps() {
@@ -443,6 +450,7 @@ renderer.setAnimationLoop((now) => {
   npcs.update(dt, focus, [playerCollider]);
   for (const update of animated) update(dt);
   for (const e of eggs) if (e.isl.group.visible && Math.hypot(e.x - focus.x, e.z - focus.z) < 70) e.update(dt, t);
+  sea.update(t);
   travel.update(dt, focus);
   if (playing) passport.tick(dt);
   if ((saveTimer += dt) > 15) (saveTimer = 0), passport.saveTime();
@@ -450,6 +458,8 @@ renderer.setAnimationLoop((now) => {
   if (started) {
     findInteractions(dt);
     for (const e of eggs) if (!player.vehicle && Math.hypot(e.x - focus.x, e.z - focus.z) < 6.5 && passport.foundEgg(e.id)) showEgg(e);
+    for (const c of sea.list)
+      if (player.vehicle && c.up > 0.5 && !seaSeen.has(c.id) && Math.hypot(c.x - focus.x, c.z - focus.z) < 60) seaSeen.add(c.id), showCard(c.icon, '🌊 Sea secret spotted!', c);
     ui.prompt(playing ? [interaction.e?.label, interaction.f?.label].filter(Boolean) : []);
 
     // Which island are we on?
