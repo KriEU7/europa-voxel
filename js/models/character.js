@@ -1,11 +1,11 @@
 // Voxel characters (Atlas and the NPCs) with a jointed rig: hips, knees, shoulders, elbows, neck.
 // Parts are built in voxel units (1 = S world units). Feet at y = 0, looking towards +z.
 import * as THREE from 'three';
-import { createVoxels, set, box, buildGeometry } from '../voxel.js';
+import { createVoxels, set, box, buildGeometry, material } from '../voxel.js';
+import { M } from '../textures.js';
 import { FLAGS } from '../flags.js';
 
 const S = 0.045;
-const material = new THREE.MeshLambertMaterial({ vertexColors: true });
 
 const rand = (seed) => {
   let s = seed * 9301 + 49297;
@@ -153,9 +153,13 @@ function head(o) {
         set(v, x, y, z, o.skin);
       }
   // Face
-  for (const [ex, hx] of [[-3, -3], [2, 2]]) {
-    box(v, Math.min(ex, ex + (ex < 0 ? 1 : -1)), 34, 4, Math.max(ex, ex + (ex < 0 ? 1 : -1)), 35, 4, '#1c1c1c');
-    set(v, hx, 35, 4, '#ffffff');
+  // Eyes: coloured iris, dark pupil, a white sparkle.
+  const iris = o.eyes ?? ['#4a2f1a', '#2e5a88', '#3f6b3a', '#5a3a1a', '#2b2b2b'][Math.floor(r() * 5)];
+  for (const [inner, outer] of [[-3, -4], [2, 3]]) {
+    set(v, outer, 35, 4, iris);
+    set(v, inner, 35, 4, '#ffffff');
+    set(v, outer, 34, 4, iris);
+    set(v, inner, 34, 4, '#141414');
   }
   box(v, -4, 37, 4, -2, 37, 4, o.brows ?? shade(o.hair, 0.8));
   box(v, 1, 37, 4, 3, 37, 4, o.brows ?? shade(o.hair, 0.8));
@@ -313,11 +317,14 @@ export function createCharacter(opts) {
     socks: '#2b4c8c', shoes: '#5b3a1e', ...opts,
   };
   const group = new THREE.Group();
+  // Detail textures: smooth skin, woven clothes (shoes and small details painted).
+  const skin = new THREE.Color(o.skin), tmp = new THREE.Color();
+  const matFor = (hex) => (tmp.set(hex), Math.abs(tmp.r - skin.r) + Math.abs(tmp.g - skin.g) + Math.abs(tmp.b - skin.b) < 0.25 ? M.SKIN : hex === o.shoes ? M.PAINT : M.FABRIC);
 
   // A part = a mesh whose origin is its joint (pivot given in voxel units).
   const part = (vox, px, py, pz, parent) => {
     const g = new THREE.Group();
-    const geo = buildGeometry(vox, S).translate(-px * S, -py * S, -pz * S);
+    const geo = buildGeometry(vox, S, matFor).translate(-px * S, -py * S, -pz * S);
     const mesh = new THREE.Mesh(geo, material);
     mesh.castShadow = true;
     g.add(mesh);

@@ -4,7 +4,11 @@
 //   circle { x, z, r, top } or box { x0, z0, x1, z1, top }, top measured from the ground.
 //   `air: true` = only the plane bumps into it (the upper part of tall buildings).
 import * as THREE from 'three';
-import { createVoxels, set, box, buildMesh } from '../voxel.js';
+import { createVoxels, set, box, buildMesh, material } from '../voxel.js';
+import { M, classify } from '../textures.js';
+
+// Detail texture of a colour, with some materials replaced (e.g. white -> marble).
+const swap = (map) => (hex) => map[classify(hex)] ?? classify(hex);
 
 const shadow = (m) => ((m.castShadow = m.receiveShadow = true), m);
 const hash = (x, y, z) => {
@@ -68,7 +72,7 @@ export function atomium() {
 
   const legs = corners.filter((c) => c.o.filter((k) => k === -1).length === 2).map((c) => ({ x: c.p.x * 1.2 * S, z: c.p.z * 1.2 * S, r: 0.6, top: 6 }));
   return {
-    object: shadow(buildMesh(v, S)),
+    object: shadow(buildMesh(v, S, () => M.METAL)),
     colliders: [{ x: 0, z: 0, r: 2.6, top: 7 }, { x0: -1.8, z0: 2, x1: 1.6, z1: 3.8, top: 2 }, ...legs, { x: 0, z: 0, r: 12, top: 28, air: true }],
   };
 }
@@ -80,7 +84,8 @@ export function colosseum() {
   for (let x = -A; x <= A; x++)
     for (let z = -B; z <= B; z++) {
       const e = Math.hypot(x / A, z / B);
-      if (e > 1) continue;
+      if (e > 1.035) continue;
+      const proud = e > 1; // half-columns and cornices standing out of the outer wall
       const ei = Math.hypot(x / (A - T), z / (B - T));
       if (ei > 1) {
         // Outer wall with three rows of arches and a top row of windows
@@ -92,6 +97,10 @@ export function colosseum() {
         for (let y = 0; y < H; y++) {
           if (ruined && outer && y > cut) continue;
           const tier = Math.min(3, Math.floor(y / 8)), ty = y - tier * 8;
+          if (proud) {
+            if (ty === 0 || ty === 7 || (tier < 3 && (u < 0.8 || u > 5.2))) set(v, x, y, z, ty === 0 || ty === 7 ? '#e2d3ae' : '#d9c79f');
+            continue;
+          }
           if (tier < 3 && ty >= 1 && ty <= 5 && u >= 1.5 && u <= 4.5 && !(ty === 5 && (u < 2.5 || u > 3.5))) continue;
           if (tier === 3 && ty >= 2 && ty <= 3 && u >= 2.5 && u <= 3.5 && Math.floor(s / 6) % 2 === 0) continue;
           set(v, x, y, z, ty === 0 ? '#c9b48a' : hash(x, y, z) < 0.5 ? '#dccba4' : '#d3c099');
@@ -137,7 +146,7 @@ export function pisa() {
       }
     }
   cone(v, 0, 0, 7, 66, 3, '#c9c2b0');
-  const object = shadow(buildMesh(v, S));
+  const object = shadow(buildMesh(v, S, swap({ [M.PLASTER]: M.MARBLE, [M.STONE]: M.MARBLE })));
   const g = new THREE.Group();
   g.add(object);
   g.rotation.z = -0.09; // the famous lean!
@@ -190,7 +199,7 @@ export function brandenburgGate() {
   }
   colliders.push({ x0: -13.5, z0: -2.8, x1: -10.2, z1: 2.8, top: 6 }, { x0: 10.2, z0: -2.8, x1: 13.5, z1: 2.8, top: 6 });
   colliders.push({ x0: -13.5, z0: -3.5, x1: 13.5, z1: 3.5, top: 16, air: true });
-  return { object: shadow(buildMesh(v, S)), colliders };
+  return { object: shadow(buildMesh(v, S, swap({ [M.FOLIAGE]: M.METAL }))), colliders };
 }
 
 export function neuschwanstein() {
@@ -210,7 +219,7 @@ export function neuschwanstein() {
   box(v, -2, 0, 17, 1, 6, 17, '#3a2a20');
   for (let x = -6; x <= 5; x += 2) box(v, x, 21, 10, x, 22, 16, '#b5654a');
   return {
-    object: shadow(buildMesh(v, S)),
+    object: shadow(buildMesh(v, S, swap({ [M.PAINT]: M.ROOF }))),
     colliders: [
       { x0: -6, z0: -2.4, x1: 6, z1: 2.4, top: 14 }, { x0: -1.8, z0: 2.4, x1: 1.8, z1: 5, top: 7 },
       ...towers.map(([x, z, r, h, roof]) => ({ x: x * S, z: z * S, r: (r + 1) * S, top: (h + roof) * S })),
@@ -294,11 +303,11 @@ export function windmill() {
           set(s, dir[0] * t + (dir[1] ? side : 0), dir[1] * t + (dir[0] ? side : 0), 0, '#f4f1ea');
         }
     }
-    sailGeo = buildMesh(s, 0.25).geometry;
+    sailGeo = buildMesh(s, 0.25, swap({ [M.PLASTER]: M.FABRIC, [M.STONE]: M.FABRIC })).geometry;
   }
   const g = new THREE.Group();
-  g.add(shadow(new THREE.Mesh(millGeo, new THREE.MeshLambertMaterial({ vertexColors: true }))));
-  const sails = shadow(new THREE.Mesh(sailGeo, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  g.add(shadow(new THREE.Mesh(millGeo, material)));
+  const sails = shadow(new THREE.Mesh(sailGeo, material));
   sails.position.set(0, 10.9, 2.5);
   g.add(sails);
   const speed = 0.6 + Math.random() * 0.4;
@@ -347,7 +356,7 @@ export function parthenon() {
     }
   const b = 6 * S; // height of the steps
   return {
-    object: shadow(buildMesh(v, S)),
+    object: shadow(buildMesh(v, S, swap({ [M.PLASTER]: M.MARBLE, [M.STONE]: M.MARBLE }))),
     colliders: [
       { x0: -10.5, z0: -5, x1: 10.5, z1: 5, top: b / 3 }, { x0: -10, z0: -4.5, x1: 10, z1: 4.5, top: (b * 2) / 3 }, { x0: -9.5, z0: -4, x1: 9.5, z1: 4, top: b },
       ...cols.map(([x, z]) => ({ x: x * S, z: z * S, r: 0.6, top: 9 })),
@@ -400,7 +409,7 @@ export function bigBen() {
   box(bus, -4, 12, 18, 3, 14, 18, '#2b3a4a');
   box(bus, -3, 15, 18, 2, 16, 18, '#1a1a1a');
   for (const z of [-12, 11]) for (const x of [-6, 5]) box(bus, x, 0, z - 2, x, 3, z + 2, '#1a1a1a');
-  const busMesh = shadow(buildMesh(bus, S));
+  const busMesh = shadow(buildMesh(bus, S, swap({ [M.BRICK]: M.PAINT })));
   busMesh.position.set(8, 0, 4);
   busMesh.rotation.y = 0.15;
 
@@ -412,7 +421,7 @@ export function bigBen() {
   box(pb, -1, 4, 2, 0, 8, 2, '#bfe3f2');
   box(pb, -2, 11, -2, 1, 11, 1, RED);
   box(pb, -1, 12, -1, 0, 12, 0, RED);
-  const phone = shadow(buildMesh(pb, S));
+  const phone = shadow(buildMesh(pb, S, swap({ [M.BRICK]: M.PAINT })));
   phone.position.set(-5, 0, 5);
 
   const g = new THREE.Group();

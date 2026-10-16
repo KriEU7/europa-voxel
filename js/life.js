@@ -3,10 +3,11 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { part, WATER_LEVEL } from './world.js';
+import { textured } from './textures.js';
 import { resolve } from './physics.js';
 import { freeSpot } from './kiosks.js';
 
-const MAT = new THREE.MeshLambertMaterial({ vertexColors: true });
+const MAT = textured();
 const box = (w, h, d, x, y, z, c) => part(new THREE.BoxGeometry(w, h, d).translate(x, y, z), c);
 const mesh = (geos) => new THREE.Mesh(mergeGeometries(geos), MAT);
 const rnd = (a, b) => a + Math.random() * (b - a);

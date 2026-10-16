@@ -2,6 +2,7 @@
 // emitting only faces that touch air, so thousands of cubes cost a single draw call.
 // Coordinates must be integers between -512 and 511.
 import * as THREE from 'three';
+import { classify, textured } from './textures.js';
 
 export const createVoxels = () => new Map();
 
@@ -57,11 +58,13 @@ const rgb = (hex) => {
   return c;
 };
 
-export function buildGeometry(vox, size = 1) {
+// matFor(colour) -> material id of the detail texture (bricks, wood, stone...): guessed from the colour by default.
+export function buildGeometry(vox, size = 1, matFor = classify) {
   // Count visible faces first so the arrays are allocated once.
   let faces = 0;
   for (const key of vox.keys()) for (const o of OFFSETS) if (!vox.has(key + o)) faces++;
-  const pos = new Float32Array(faces * 12), nor = new Float32Array(faces * 12), col = new Float32Array(faces * 12);
+  const pos = new Float32Array(faces * 12), nor = new Float32Array(faces * 12), col = new Float32Array(faces * 12), mat = new Float32Array(faces * 4);
+  const mats = new Map();
   const idx = new Uint32Array(faces * 6);
   let f = 0, minY = Infinity, maxY = -Infinity;
   for (const key of vox.keys()) {
@@ -73,6 +76,8 @@ export function buildGeometry(vox, size = 1) {
   for (const [key, color] of vox) {
     const x = (key >> 20) - 512, y = ((key >> 10) & 1023) - 512, z = (key & 1023) - 512;
     const [r, g, b] = rgb(color), j = jitter(x, y, z);
+    if (!mats.has(color)) mats.set(color, matFor(color));
+    const m = mats.get(color);
     for (let i = 0; i < 6; i++) {
       if (vox.has(key + OFFSETS[i])) continue;
       const { n, c } = FACES[i], ao = [0, 0, 0, 0];
@@ -93,6 +98,7 @@ export function buildGeometry(vox, size = 1) {
         col[p + 2] = b * j * ao[k];
       }
       const v = f * 4;
+      mat.fill(m, v, v + 4);
       // Split the quad along the diagonal that keeps the shading smooth.
       if (ao[0] + ao[2] >= ao[1] + ao[3]) idx.set([v, v + 1, v + 2, v, v + 2, v + 3], f * 6);
       else idx.set([v + 1, v + 2, v + 3, v + 1, v + 3, v], f * 6);
@@ -103,10 +109,11 @@ export function buildGeometry(vox, size = 1) {
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('aMat', new THREE.BufferAttribute(mat, 1));
   geo.setIndex(new THREE.BufferAttribute(idx, 1));
   return geo;
 }
 
-const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+export const material = textured();
 
-export const buildMesh = (vox, size = 1) => new THREE.Mesh(buildGeometry(vox, size), material);
+export const buildMesh = (vox, size = 1, matFor) => new THREE.Mesh(buildGeometry(vox, size, matFor), material);

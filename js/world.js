@@ -5,6 +5,7 @@ import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometr
 import { createVoxels, set, buildMesh } from './voxel.js';
 import { FLAGS } from './flags.js';
 import { platformAt } from './physics.js';
+import { M, classify, textured, withMaterial } from './textures.js';
 
 export const WATER_LEVEL = 0.75;
 export const PIER_TOP = WATER_LEVEL + 0.9;
@@ -78,7 +79,8 @@ const inRect = (r, x, z) => r && x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z
 
 // One coloured piece. Painted look: every piece is darker at the bottom and lighter on top;
 // smooth = soft rounded shading (tree crowns, bushes) instead of flat facets.
-export function part(geo, color, smooth = false) {
+// mat: detail texture (M.WOOD, M.BRICK...), guessed from the colour if not given.
+export function part(geo, color, smooth = false, mat = classify(color)) {
   if (geo.attributes.uv) geo.deleteAttribute('uv');
   if (smooth) {
     geo.deleteAttribute('normal');
@@ -97,20 +99,26 @@ export function part(geo, color, smooth = false) {
     col.set([c.r * k, c.g * k, c.b * k], i * 3);
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  return geo;
+  return withMaterial(geo, mat);
 }
-const ico = (r, y, color, sx = 1, sy = 1, sz = 1) => part(new THREE.IcosahedronGeometry(r, 1).scale(sx, sy, sz).translate(0, y, 0), color, true);
+const ico = (r, y, color, sx = 1, sy = 1, sz = 1, mat) => part(new THREE.IcosahedronGeometry(r, 1).scale(sx, sy, sz).translate(0, y, 0), color, true, mat);
+const trunk = (r0, r1, h, color) => part(new THREE.CylinderGeometry(r0, r1, h, 6).translate(0, h / 2, 0), color, false, M.BARK);
 const cyl = (r0, r1, h, color, sides = 5) => part(new THREE.CylinderGeometry(r0, r1, h, sides).translate(0, h / 2, 0), color);
 const cone = (r, h, y, color, sides = 6) => part(new THREE.ConeGeometry(r, h, sides).translate(0, y + h / 2, 0), color);
 
 const TREES = {
-  oak: (r) => [cyl(0.25, 0.35, 2.2, '#6b4423'), ico(1.7, 3.2, r < 0.5 ? '#3f8f3a' : '#4fa040')],
-  poplar: () => [cyl(0.2, 0.25, 1.2, '#6b4423'), cone(1.0, 5, 1.1, '#2f6b2e')],
-  pine: (r) => [cyl(0.2, 0.3, 1.5, '#5a3a20'), cone(1.8, 3, 1.2, '#2a5a32'), cone(1.4, 2.6, 2.8, r < 0.5 ? '#2f6638' : '#28552e'), cone(0.9, 2, 4.3, '#2f6638')],
-  cypress: () => [cyl(0.15, 0.2, 0.8, '#5a3a20'), cone(0.7, 6, 0.6, '#2c5e2a', 7)],
-  umbrella: () => [part(new THREE.CylinderGeometry(0.15, 0.25, 4, 5).translate(0, 2, 0).rotateZ(0.12), '#6b4423'), ico(2.2, 4.3, '#4a7d3a', 1, 0.45, 1)],
+  oak: (r) => [
+    trunk(0.25, 0.38, 2.4, '#6b4423'),
+    part(new THREE.CylinderGeometry(0.08, 0.14, 1.4, 5).translate(0, 0.7, 0).rotateZ(0.7).translate(0.1, 1.9, 0), '#6b4423', false, M.BARK),
+    part(new THREE.CylinderGeometry(0.08, 0.14, 1.3, 5).translate(0, 0.65, 0).rotateX(-0.7).translate(0, 2, 0.1), '#6b4423', false, M.BARK),
+    ico(1.5, 3.4, r < 0.5 ? '#3f8f3a' : '#4fa040'), ico(1.1, 3.1, '#468f3c').translate(1, 0, 0.3), ico(1.0, 3.0, '#3b8536').translate(-0.6, 0.1, 0.8), ico(0.9, 4.3, '#58a848').translate(0.2, 0, -0.4),
+  ],
+  poplar: () => [trunk(0.2, 0.25, 1.2, '#6b4423'), cone(1.0, 5, 1.1, '#2f6b2e')],
+  pine: (r) => [trunk(0.2, 0.3, 1.5, '#5a3a20'), cone(1.8, 3, 1.2, '#2a5a32'), cone(1.4, 2.6, 2.8, r < 0.5 ? '#2f6638' : '#28552e'), cone(0.9, 2, 4.3, '#2f6638')],
+  cypress: () => [trunk(0.15, 0.2, 0.8, '#5a3a20'), cone(0.7, 6, 0.6, '#2c5e2a', 7)],
+  umbrella: () => [part(new THREE.CylinderGeometry(0.15, 0.25, 4, 5).translate(0, 2, 0).rotateZ(0.12), '#6b4423', false, M.BARK), ico(2.2, 4.3, '#4a7d3a', 1, 0.45, 1)],
   olive: (r) => [
-    part(new THREE.CylinderGeometry(0.2, 0.35, 1.6, 5).translate(0, 0.8, 0).rotateZ(r - 0.5), '#7a6a55'),
+    part(new THREE.CylinderGeometry(0.2, 0.35, 1.6, 5).translate(0, 0.8, 0).rotateZ(r - 0.5), '#7a6a55', false, M.BARK),
     part(new THREE.IcosahedronGeometry(1.0, 1).translate(0.5, 1.9, 0), '#8a9a5b', true),
     part(new THREE.IcosahedronGeometry(0.9, 1).translate(-0.6, 2.1, 0.3), '#7d8e50', true),
   ],
@@ -124,52 +132,125 @@ const TREES = {
 };
 
 // Village houses in the style of each country. front = +z.
+// wall: detail texture of the walls. Optional: shutters (colour), flowers (window boxes), balcony,
+// gable: 'stepped' (Dutch), beams (German half-timbering), flat (Greek roof with a dome).
 const HOUSES = {
-  france: { walls: ['#efe6d2', '#f4ecdc'], roof: ['#5d6d7e'], door: '#2f4f6f', chimney: true },
-  belgium: { walls: ['#b4643f', '#c47a52'], roof: ['#4a4a4a'], door: '#3e2723', chimney: true },
-  netherlands: { walls: ['#9c3d2a', '#7a2e22', '#b04a32'], roof: ['#3b3b3b'], door: '#2e7d32', tall: true },
-  uk: { walls: ['#f2efe6', '#b0503a'], roof: ['#c9a25a', '#4a4a4a'], door: '#c62828', chimney: true },
-  germany: { walls: ['#efe9dc'], roof: ['#8b3a2a'], door: '#4a2e1d', beams: '#4a2e1d', chimney: true },
-  spain: { walls: ['#f4efe3', '#efe0c4'], roof: ['#c8643c'], door: '#6d4c41' },
-  italy: { walls: ['#e3b26a', '#d9895b', '#eccb8f'], roof: ['#b85a35'], door: '#5d4037' },
-  greece: { walls: ['#ffffff'], dome: '#1f5fbf', door: '#1f5fbf' },
+  france: { walls: ['#e8dcc4', '#efe6d2'], wall: M.STONE, roof: ['#5d6d7e'], door: '#2f4f6f', frame: '#f4f1ea', shutters: '#7d97ad', flowers: true, chimney: true },
+  belgium: { walls: ['#a9573a', '#b4643f'], wall: M.BRICK, roof: ['#4a4a4a'], door: '#3e2723', frame: '#ffffff', chimney: true },
+  netherlands: { walls: ['#9c3d2a', '#7a2e22', '#b04a32'], wall: M.BRICK, roof: ['#3b3b3b'], door: '#2e7d32', frame: '#ffffff', gable: 'stepped', tall: true },
+  uk: { walls: ['#a24a35', '#f2efe6'], wall: M.BRICK, roof: ['#4a4a4a', '#c9a25a'], door: '#c62828', frame: '#ffffff', chimney: true, flowers: true },
+  germany: { walls: ['#efe9dc'], wall: M.PLASTER, roof: ['#8b3a2a'], door: '#4a2e1d', frame: '#ffffff', beams: '#4a2e1d', flowers: true, chimney: true },
+  spain: { walls: ['#f4efe3', '#efe0c4'], wall: M.PLASTER, roof: ['#c8643c'], door: '#6d4c41', frame: '#f4efe3', shutters: '#7a4a2a', balcony: true },
+  italy: { walls: ['#e3b26a', '#d9895b', '#eccb8f'], wall: M.PLASTER, roof: ['#b85a35'], door: '#5d4037', frame: '#f2e6cf', shutters: '#3f6b3a', balcony: true },
+  greece: { walls: ['#ffffff'], wall: M.PLASTER, door: '#1f5fbf', frame: '#ffffff', shutters: '#1f5fbf', flat: true, dome: '#1f5fbf' },
 };
 // Windows and lamps: their own material, so they can light up at night (sky.js).
-export const GLOW = new THREE.MeshLambertMaterial({ vertexColors: true });
+export const GLOW = textured();
 const WINDOW = '#9fd3f0';
-const boxAt = (w, h, d, x, y, z, color) => part(new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z), color);
+const boxAt = (w, h, d, x, y, z, color, mat) => part(new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z), color, false, mat);
+
+// A window on a wall that faces +z, centred at (0, y): frame, glass, cross bars, sill, shutters, flowers.
+function windowAt(style, y, rnd, { tall = false } = {}) {
+  const ww = 0.8, wh = tall ? 1.7 : 0.95, g = [], glow = [];
+  g.push(boxAt(ww + 0.18, wh + 0.18, 0.06, 0, y - wh / 2 - 0.09, 0.02, style.frame, M.PAINT));
+  glow.push(boxAt(ww, wh, 0.05, 0, y - wh / 2, 0.06, WINDOW, M.PAINT));
+  g.push(boxAt(0.05, wh, 0.04, 0, y - wh / 2, 0.1, style.frame, M.PAINT), boxAt(ww, 0.05, 0.04, 0, y + wh * 0.1, 0.1, style.frame, M.PAINT));
+  g.push(boxAt(ww + 0.3, 0.08, 0.22, 0, y - wh / 2 - 0.16, 0.1, '#d8d2c4', M.STONE)); // sill
+  if (style.shutters) for (const s of [-1, 1]) g.push(boxAt(ww / 2 + 0.04, wh + 0.1, 0.05, s * (ww * 0.75 + 0.12), y - wh / 2 - 0.05, 0.04, style.shutters, M.WOOD));
+  if (style.flowers && !tall && rnd() < 0.6) {
+    g.push(boxAt(ww + 0.1, 0.2, 0.22, 0, y - wh / 2 - 0.12, 0.2, '#7a4a2a', M.WOOD));
+    for (let i = 0; i < 4; i++) g.push(boxAt(0.18, 0.16, 0.16, -0.3 + i * 0.2, y - wh / 2 + 0.06, 0.2, ['#e53935', '#ec407a', '#e53935', '#fdd835'][i], M.FOLIAGE));
+  }
+  return { g, glow };
+}
 
 function house(style, r) {
-  const w = style.tall ? 3.6 : 4.4 + r * 1.2, d = 4.2, h = style.tall ? 4.6 : 2.8, F = 1.2; // F = foundation under the ground
-  const g = [boxAt(w, h + F, d, 0, -F, 0, style.walls[Math.floor(r * style.walls.length)])], glow = [];
-  g.push(boxAt(1, 1.7, 0.1, 0, 0, d / 2 + 0.03, style.door));
-  for (const x of style.tall ? [] : [-w / 2 + 0.9, w / 2 - 0.9]) glow.push(boxAt(0.8, 0.8, 0.1, x, 1, d / 2 + 0.03, WINDOW));
-  for (let y = 1; y < h - 0.5; y += 1.6) for (const z of [-0.9, 0.9]) for (const x of [-w / 2 - 0.03, w / 2 + 0.03]) glow.push(boxAt(0.1, 0.8, 0.8, x, y, z, WINDOW));
-  if (style.tall) glow.push(boxAt(0.9, 0.9, 0.1, 0, 2.6, d / 2 + 0.03, WINDOW));
-  if (style.beams) {
-    for (const x of [-w / 2, 0, w / 2]) g.push(boxAt(0.2, h, 0.1, x, 0, d / 2 + 0.06, style.beams));
-    g.push(boxAt(w, 0.2, 0.1, 0, h / 2, d / 2 + 0.06, style.beams), boxAt(w, 0.2, 0.1, 0, h - 0.2, d / 2 + 0.06, style.beams));
+  const rnd = (() => { let s = Math.floor(r * 1e6) + 7; return () => ((s = (s * 9301 + 49297) % 233280) / 233280); })();
+  const w = style.tall ? 4 : 4.8 + r * 1.2, d = 4.6, h = style.tall ? 5.6 : 4.2, F = 1.2; // F = foundation under the ground
+  const wallColor = style.walls[Math.floor(r * style.walls.length)];
+  const wall = style.wall === M.BRICK && wallColor === '#f2efe6' ? M.PLASTER : style.wall; // white British cottages are plastered
+  const g = [boxAt(w, h + F, d, 0, -F, 0, wallColor, wall)], glow = [];
+  g.push(boxAt(w + 0.1, 0.35, d + 0.1, 0, -0.2, 0, '#8f8a80', M.STONE)); // base course
+  const put = (piece, rotY, x, z) => { // move a front-facing piece onto a wall
+    for (const p of piece.g) g.push(p.rotateY(rotY).translate(x, 0, z));
+    for (const p of piece.glow) glow.push(p.rotateY(rotY).translate(x, 0, z));
+  };
+  // Front: door in the middle, windows on both floors (a balcony door upstairs in the south).
+  const door = { g: [
+    boxAt(1.25, 2.15, 0.06, 0, 0, 0.02, style.frame, M.PAINT), boxAt(1.05, 2, 0.08, 0, 0, 0.05, style.door, M.WOOD),
+    boxAt(0.1, 0.1, 0.06, 0.35, 1, 0.12, '#d9b25a', M.METAL), boxAt(1.6, 0.18, 0.5, 0, -0.05, 0.25, '#bdb6a8', M.STONE),
+  ], glow: [] };
+  const narrow = w < 4.6, side = w / 2 - 1.1; // narrow Dutch houses: door on one side
+  put(door, 0, narrow ? -w / 4 : 0, d / 2);
+  for (const x of narrow ? [w / 4] : [-side, side]) put(windowAt(style, 1.9, rnd), 0, x, d / 2);
+  const up = h - 0.9, balcony = style.balcony && r > 0.35;
+  for (const x of narrow ? [-w / 4, w / 4] : balcony ? [-side, side] : [-side, 0, side]) put(windowAt(style, up, rnd), 0, x, d / 2);
+  if (balcony) {
+    put(windowAt(style, up + 0.35, rnd, { tall: true }), 0, 0, d / 2);
+    const iron = '#2b2b2b', by = up - 1.2;
+    g.push(boxAt(1.9, 0.12, 0.8, 0, by, d / 2 + 0.4, '#d8d2c4', M.STONE), boxAt(1.9, 0.05, 0.05, 0, by + 0.9, d / 2 + 0.78, iron, M.METAL));
+    for (let x = -0.9; x <= 0.91; x += 0.15) g.push(boxAt(0.03, 0.85, 0.03, x, by + 0.08, d / 2 + 0.78, iron, M.METAL));
+    for (const x of [-0.8, 0.8]) g.push(boxAt(0.25, 0.25, 0.25, x, by + 0.12, d / 2 + 0.5, '#b5653a', M.BRICK), boxAt(0.35, 0.3, 0.35, x, by + 0.37, d / 2 + 0.5, '#3f8f3a', M.FOLIAGE));
   }
-  if (style.dome) {
-    g.push(boxAt(w + 0.2, 0.25, d + 0.2, 0, h, 0, '#f4f4f4'));
-    if (r < 0.5) g.push(part(new THREE.SphereGeometry(1.1, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, h + 0.2, 0), style.dome));
-    return { geo: g, glow, top: h + 1.3, w, d };
+  // Sides: one window per floor.
+  for (const s of [-1, 1]) for (const y of [1.9, up]) put(windowAt(style, y, rnd), (s * Math.PI) / 2, (s * w) / 2, 0);
+
+  if (style.beams) { // half-timbering: posts, rails and diagonal braces on the front and the sides
+    const beam = (bw, bh, x, y, rot, at, rz = 0) =>
+      g.push(part(new THREE.BoxGeometry(bw, bh, 0.08).rotateZ(rz).translate(x, y, 0.06).rotateY(rot).translate(...at), style.beams, false, M.WOOD));
+    for (const [rot, at, half] of [[0, [0, 0, d / 2], w / 2], [Math.PI / 2, [w / 2, 0, 0], d / 2], [-Math.PI / 2, [-w / 2, 0, 0], d / 2]]) {
+      for (const x of [-half + 0.1, half - 0.1]) beam(0.18, h, x, h / 2, rot, at);
+      for (const y of [0.1, h / 2, h - 0.1]) beam(half * 2, 0.16, 0, y, rot, at);
+      for (const s of [-1, 1]) beam(0.14, Math.hypot(half * 0.5, h / 2), s * half * 0.72, h * 0.75, rot, at, s * Math.atan2(half * 0.5, h / 2));
+    }
   }
-  // Pitched roof: a triangle pushed along the depth of the house.
-  const rh = style.tall ? 2.4 : 1.8, o = 0.35;
-  const tri = new THREE.Shape([new THREE.Vector2(-w / 2 - o, 0), new THREE.Vector2(w / 2 + o, 0), new THREE.Vector2(0, rh)]);
-  g.push(part(new THREE.ExtrudeGeometry(tri, { depth: d + o * 2, bevelEnabled: false }).translate(0, h, -d / 2 - o), style.roof[Math.floor(r * 7) % style.roof.length]));
-  if (style.chimney) g.push(boxAt(0.6, 1.6, 0.6, w / 4, h + 0.6, -d / 4, '#8d6e63'));
+
+  if (style.flat) { // Greek house: flat roof with a low wall around it, sometimes a blue dome
+    g.push(boxAt(w + 0.15, 0.4, d + 0.15, 0, h, 0, '#f4f4f4', M.PLASTER), boxAt(w - 0.3, 0.1, d - 0.3, 0, h + 0.3, 0, '#e8e8e8', M.PLASTER));
+    if (r < 0.5) g.push(boxAt(2, 0.4, 2, 0, h + 0.3, 0, '#f4f4f4', M.PLASTER), part(new THREE.SphereGeometry(1.1, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, h + 0.7, 0), style.dome, true, M.PAINT));
+    return { geo: g, glow, top: h + 1.8, w, d };
+  }
+
+  // Pitched roof: wall-coloured gables, two tiled slopes, a ridge, gutters, a chimney.
+  const rh = style.tall ? 2.8 : 2, o = 0.4, roof = style.roof[Math.floor(r * 7) % style.roof.length];
+  const roofMat = roof === '#c9a25a' ? M.BARK : M.ROOF; // straw thatch looks like bark furrows
+  const tri = new THREE.Shape([new THREE.Vector2(-w / 2, 0), new THREE.Vector2(w / 2, 0), new THREE.Vector2(0, rh)]);
+  g.push(part(new THREE.ExtrudeGeometry(tri, { depth: d, bevelEnabled: false }).translate(0, h, -d / 2), wallColor, false, wall));
+  const slope = Math.atan2(rh, w / 2), L = Math.hypot(w / 2, rh) + o;
+  for (const s of [-1, 1]) {
+    g.push(part(new THREE.BoxGeometry(L, 0.18, d + o * 2).translate(s * L / 2, 0.12, 0).rotateZ(-s * slope).translate(0, h + rh, 0), roof, false, roofMat));
+    g.push(boxAt(0.14, 0.14, d + o * 2, s * (w / 2 + o * 0.9), h - o * Math.tan(slope) - 0.12, 0, '#5a5a5a', M.METAL)); // gutter
+  }
+  g.push(boxAt(0.3, 0.18, d + o * 2, 0, h + rh + 0.02, 0, roof, roofMat)); // ridge
+  if (style.gable === 'stepped') // Dutch stepped gable in front of the roof
+    for (let k = 0; k < 4; k++) {
+      const sw = w * (1 - k * 0.24);
+      g.push(boxAt(sw, 0.75, 0.35, 0, h + k * 0.75, d / 2 - 0.1, wallColor, wall), boxAt(sw + 0.1, 0.1, 0.45, 0, h + k * 0.75 + 0.7, d / 2 - 0.1, '#f2f2f2', M.STONE));
+    }
+  if (style.chimney) g.push(boxAt(0.6, rh + 0.6, 0.6, w / 4, h + rh * 0.3, -d / 4, '#8d5a44', M.BRICK), boxAt(0.8, 0.15, 0.8, w / 4, h + rh * 1.3 + 0.45, -d / 4, '#6b6b6b', M.STONE));
   return { geo: g, glow, top: h + rh, w, d };
 }
 
+// Park bench: wooden slats on cast iron sides.
 function bench() {
-  const g = [boxAt(2, 0.12, 0.6, 0, 0.5, 0, '#a0714a'), boxAt(2, 0.45, 0.1, 0, 0.75, -0.28, '#a0714a')];
-  for (const x of [-0.85, 0.85]) g.push(boxAt(0.12, 0.5, 0.5, x, 0, 0, '#3a3a3a'), boxAt(0.12, 0.7, 0.1, x, 0.5, -0.28, '#3a3a3a'));
+  const g = [], iron = '#2e3236';
+  for (let i = 0; i < 3; i++) g.push(boxAt(2, 0.06, 0.16, 0, 0.48, 0.2 - i * 0.2, '#a0714a', M.WOOD));
+  for (let i = 0; i < 2; i++) g.push(boxAt(2, 0.14, 0.05, 0, 0.68 + i * 0.22, -0.3, '#a0714a', M.WOOD));
+  for (const x of [-0.85, 0.85]) {
+    g.push(boxAt(0.08, 0.48, 0.08, x, 0, 0.22, iron, M.METAL), boxAt(0.08, 1.05, 0.08, x, 0, -0.26, iron, M.METAL));
+    g.push(boxAt(0.08, 0.06, 0.6, x, 0.42, -0.02, iron, M.METAL), boxAt(0.08, 0.06, 0.45, x, 0.7, 0.02, iron, M.METAL)); // seat support, armrest
+  }
   return mergeGeometries(g);
 }
-const lamp = () => mergeGeometries([cyl(0.1, 0.14, 3.4, '#33383d', 6), boxAt(0.7, 0.12, 0.7, 0, 3.8, 0, '#33383d')]);
-const lampLight = () => boxAt(0.5, 0.5, 0.5, 0, 3.3, 0, '#fff3b0');
+// Old style street lamp: base, fluted pole, lantern with four posts and a little roof.
+const lamp = () => {
+  const iron = '#2e3236', g = [boxAt(0.45, 0.3, 0.45, 0, 0, 0, iron, M.METAL), cyl(0.09, 0.13, 3.1, iron, 8)];
+  g.push(boxAt(0.2, 0.12, 0.2, 0, 3.05, 0, iron, M.METAL), boxAt(0.5, 0.06, 0.5, 0, 3.15, 0, iron, M.METAL));
+  for (const [x, z] of [[-0.22, -0.22], [0.22, -0.22], [-0.22, 0.22], [0.22, 0.22]]) g.push(boxAt(0.05, 0.55, 0.05, x, 3.2, z, iron, M.METAL));
+  g.push(part(new THREE.ConeGeometry(0.42, 0.3, 4).rotateY(Math.PI / 4).translate(0, 3.9, 0), iron, false, M.METAL), boxAt(0.08, 0.12, 0.08, 0, 4.05, 0, iron, M.METAL));
+  return mergeGeometries(g.map((x) => (x.attributes.aMat ? x : withMaterial(x, M.METAL))));
+};
+const lampLight = () => boxAt(0.4, 0.5, 0.4, 0, 3.22, 0, '#fff3b0', M.PAINT);
 const umbrella = (color) => mergeGeometries([cyl(0.06, 0.06, 2.4, '#eeeeee', 4), cone(1.5, 0.6, 2.2, color, 8), boxAt(1.1, 0.05, 2, 1.3, 0, 0.4, color)]);
 
 function voxelFlag(id) {
@@ -177,7 +258,7 @@ function voxelFlag(id) {
   for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) set(vox, x, y, 0, FLAGS[id]((x + 0.5) / W, 1 - (y + 0.5) / H));
   const flag = buildMesh(vox, 0.14);
   flag.position.set(0.15, 5.2, 0);
-  const pole = new THREE.Mesh(cyl(0.08, 0.1, 7.2, '#d9d9d9', 6), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const pole = new THREE.Mesh(cyl(0.08, 0.1, 7.2, '#d9d9d9', 6), textured());
   const g = new THREE.Group();
   g.add(flag, pole);
   g.traverse((o) => o.isMesh && (o.castShadow = true));
@@ -254,6 +335,7 @@ function makeIsland(cfg) {
   const WET = C('#cdb57c'), SHALLOW = C('#e3d6a4'), SEABED = C('#1d6f9a');
   const rw = cfg.runway, rwMid = (rw.x0 + rw.x1) / 2;
   const ss = THREE.MathUtils.smoothstep, down = (x, hi, lo) => 1 - ss(x, lo, hi); // down: 1 below lo, 0 above hi
+  const w4 = [0, 0, 0, 0]; // detail texture blend of the last vertex: sand, rock, gravel, asphalt (the rest is grass)
   function vertexColor(x, z, y, ny) {
     // Grass: light and dark meadows, a few yellow flowery patches, warmer and darker uphill, rock on high tops.
     const c = GA.clone().lerp(GB, ss(noise(x * 0.6 + nx, z * 0.6 + nz), -0.9, 0.9));
@@ -265,9 +347,17 @@ function makeIsland(cfg) {
     // Soft zones
     const pd = Math.hypot(x - cfg.plaza.x, z - cfg.plaza.z) - cfg.plaza.r;
     const sd = s2 ? Math.hypot(x - s2.x, z - s2.z) - s2.r : Infinity;
-    c.lerp(GRAVEL, ss(-Math.min(pd, sd), -1.5, 1));
-    if (cfg.lawn) c.lerp(Math.abs(x) < 2.5 ? GRAVEL : LAWN, ss(-rectDist(cfg.lawn, x, z) + (inRect(cfg.lawn, x, z) ? 1 : 0), -1, 0.5));
-    if (hasRunway) c.lerp(ASPHALT, ss(-rectDist(rw, x, z) + (inRect(rw, x, z) ? 1 : 0), -0.8, 0.5));
+    const gravel = ss(-Math.min(pd, sd), -1.5, 1);
+    c.lerp(GRAVEL, gravel);
+    const lawn = cfg.lawn ? ss(-rectDist(cfg.lawn, x, z) + (inRect(cfg.lawn, x, z) ? 1 : 0), -1, 0.5) : 0;
+    if (cfg.lawn) c.lerp(Math.abs(x) < 2.5 ? GRAVEL : LAWN, lawn);
+    const asphalt = hasRunway ? ss(-rectDist(rw, x, z) + (inRect(rw, x, z) ? 1 : 0), -0.8, 0.5) : 0;
+    if (hasRunway) c.lerp(ASPHALT, asphalt);
+    const sand = down(y, 1.9, 1.25), keep = 1 - sand;
+    w4[0] = sand;
+    w4[1] = Math.max(cfg.height >= 12 ? ss(up, 0.85, 1.05) * 0.8 : 0, down(ny, 0.9, 0.7)) * keep * (1 - gravel - asphalt);
+    w4[2] = Math.max(gravel, Math.abs(x) < 2.5 ? lawn : 0) * keep;
+    w4[3] = asphalt * keep;
     // Beach: dry sand, then wet sand at the water line, light sand under the shallow water.
     c.lerp(SAND, down(y, 1.9, 1.25));
     c.lerp(WET, down(y, 1.1, 0.75) * 0.8);
@@ -275,7 +365,7 @@ function makeIsland(cfg) {
     c.lerp(SEABED, down(y, -0.8, -2.6)); // deeper: the same blue as the sea floor
     return c.multiplyScalar(0.97 + rand(x, z, 9) * 0.06);
   }
-  const V = N + 1, pos = new Float32Array(V * V * 3), col = new Float32Array(V * V * 3), index = [];
+  const V = N + 1, pos = new Float32Array(V * V * 3), col = new Float32Array(V * V * 3), wts = new Float32Array(V * V * 4), index = [];
   const hAt = (i, j) => grid[Math.min(N, Math.max(0, i)) * V + Math.min(N, Math.max(0, j))];
   for (let i = 0; i <= N; i++)
     for (let j = 0; j <= N; j++) {
@@ -284,6 +374,7 @@ function makeIsland(cfg) {
       const ny = (2 * CELL) / Math.hypot(gx, 2 * CELL, gz);
       pos.set([x, y, z], k);
       vertexColor(x, z, y, ny).toArray(col, k);
+      wts.set(w4.map((w) => Math.max(0, w)), (i * V + j) * 4);
     }
   for (let i = 0; i < N; i++)
     for (let j = 0; j < N; j++) {
@@ -294,9 +385,10 @@ function makeIsland(cfg) {
   const terrainGeo = new THREE.BufferGeometry();
   terrainGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   terrainGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  terrainGeo.setAttribute('aW', new THREE.BufferAttribute(wts, 4));
   terrainGeo.setIndex(index);
   terrainGeo.computeVertexNormals();
-  const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const terrain = new THREE.Mesh(terrainGeo, textured({}, true));
   terrain.receiveShadow = true;
 
   const colliders = [];
@@ -334,8 +426,8 @@ function makeIsland(cfg) {
 
   // Runway markings: white side lines and a dashed centre line.
   if (hasRunway) {
-    for (const x of [rw.x0 + 0.5, rw.x1 - 0.5]) decor.push(boxAt(0.4, 0.04, rw.z1 - rw.z0 - 1, x, rw.h, (rw.z0 + rw.z1) / 2, '#f2f2f2'));
-    for (let z = rw.z0 + 3; z < rw.z1 - 2; z += 4) decor.push(boxAt(0.5, 0.04, 2, rwMid, rw.h, z, '#f2f2f2'));
+    for (const x of [rw.x0 + 0.5, rw.x1 - 0.5]) decor.push(withMaterial(boxAt(0.4, 0.04, rw.z1 - rw.z0 - 1, x, rw.h, (rw.z0 + rw.z1) / 2, '#f2f2f2'), M.ASPHALT));
+    for (let z = rw.z0 + 3; z < rw.z1 - 2; z += 4) decor.push(withMaterial(boxAt(0.5, 0.04, 2, rwMid, rw.h, z, '#f2f2f2'), M.ASPHALT));
   }
 
   const planeSpot = hasRunway ? { x: ox + rwMid, z: oz + rw.z0 + 7, heading: 0, y: rw.h } : null;
@@ -429,7 +521,7 @@ function makeIsland(cfg) {
       const a = rand(i, 1, cfg.seed) * Math.PI * 2, d = cfg.R * (0.5 + rand(i, 2, cfg.seed) * 0.45);
       const x = Math.sin(a) * d, z = Math.cos(a) * d, y = surface(x, z), s = 0.6 + rand(i, 3) * 1.2;
       if (y < 0 || blocked(x, z)) continue;
-      decor.push(part(new THREE.DodecahedronGeometry(s, 0).translate(x, y + s * 0.3, z), rand(i, 4) < 0.5 ? '#9a9a96' : '#b5b3ab'));
+      decor.push(part(new THREE.DodecahedronGeometry(s, 0).translate(x, y + s * 0.3, z), rand(i, 4) < 0.5 ? '#9a9a96' : '#b5b3ab', false, M.ROCK));
       const [wx, wz] = W(x, z);
       colliders.push({ x: wx, z: wz, r: s * 0.8, top: y + s * 1.2 });
     }
@@ -438,7 +530,7 @@ function makeIsland(cfg) {
       for (let x = f.x0; x <= f.x1; x += cfg.id === 'france' ? 1.4 : 0.9) {
         const y = surface(x, z);
         if (y < 1.2) continue;
-        if (cfg.id === 'france') decor.push(ico(0.7, 0, rand(x, z) < 0.5 ? '#9a6fd0' : '#8a5cc4', 1, 0.8, 1).translate(x, y + 0.3, z));
+        if (cfg.id === 'france') decor.push(ico(0.7, 0, rand(x, z) < 0.5 ? '#9a6fd0' : '#8a5cc4', 1, 0.8, 1, M.FOLIAGE).translate(x, y + 0.3, z));
         else decor.push(part(new THREE.BoxGeometry(0.45, 0.5, 0.45).translate(x, y + 0.45, z), ['#e53935', '#fdd835', '#ec407a', '#fb8c00'][Math.floor(z / 2) % 4 & 3]));
       }
   if (cfg.extras.includes('hedges'))
@@ -463,12 +555,12 @@ function makeIsland(cfg) {
         const c = FLOWERS[Math.floor(rand(x, z, 25) * FLOWERS.length)];
         for (let k = 0; k < 5; k++) decor.push(boxAt(0.3, 0.3, 0.3, jx + Math.sin(k * 2.5) * 0.6, y + 0.1 + (k % 2) * 0.12, jz + Math.cos(k * 2.5) * 0.6, c));
         flowerSpots.push(W(jx, jz));
-      } else decor.push(ico(0.8, 0, '#3d8a35', 1, 0.7, 1).translate(jx, y + 0.3, jz));
+      } else decor.push(ico(0.8, 0, '#3d8a35', 1, 0.7, 1).translate(jx, y + 0.3, jz), ico(0.55, 0, '#4a9a3e', 1, 0.8, 1).translate(jx + 0.6, y + 0.3, jz + 0.3));
     }
 
   const group = new THREE.Group();
   group.position.set(ox, 0, oz);
-  const decorMesh = new THREE.Mesh(mergeGeometries(decor), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const decorMesh = new THREE.Mesh(mergeGeometries(decor), textured());
   decorMesh.castShadow = decorMesh.receiveShadow = true;
   group.add(terrain, decorMesh, new THREE.Mesh(mergeGeometries(glow), GLOW));
 

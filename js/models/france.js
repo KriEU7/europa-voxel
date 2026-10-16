@@ -1,4 +1,5 @@
 import { createVoxels, set, box, buildMesh } from '../voxel.js';
+import { M } from '../textures.js';
 
 const IRON = '#7a5c3e';
 const DECK = '#5e4630';
@@ -72,7 +73,7 @@ export function eiffelTower(K = 2) {
   box(vox, -2 * K, T + 5 * K, -2 * K, 2 * K, T + 6 * K - 1, 2 * K, DECK);
   box(vox, 0, T + 6 * K, 0, 0, T + 14 * K, 0, '#c9c9c9');
 
-  const mesh = buildMesh(vox, 0.5 / K);
+  const mesh = buildMesh(vox, 0.5 / K, () => M.METAL); // wrought iron
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
 }

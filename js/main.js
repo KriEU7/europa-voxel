@@ -4,6 +4,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createWorld } from './world.js';
+import { textureOn } from './textures.js';
 import { eiffelTower, EIFFEL_COLLIDERS } from './models/france.js';
 import { atomium, colosseum, pisa, brandenburgGate, neuschwanstein, sagradaFamilia, windmill, parthenon, bigBen } from './models/monuments.js';
 import { createCharacter } from './models/character.js';
@@ -48,7 +49,7 @@ const camera = new THREE.PerspectiveCamera(settings.fov, 1, 0.1, 2000);
 // Quality "High" only: a soft glow around the sun, lit windows and lamps.
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.5, 0.97));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.5, 1.4));
 composer.addPass(new OutputPass());
 
 // ---- World ------------------------------------------------------------------------
@@ -244,6 +245,7 @@ function applySettings() {
   quality = QUALITY[settings.quality];
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatio));
   composer.setPixelRatio(Math.min(devicePixelRatio, quality.pixelRatio));
+  textureOn.value = settings.quality === 'low' ? 0 : 1; // detail textures cost time on slow computers
   const shadows = quality.shadows > 0;
   if (shadows) {
     sun.shadow.mapSize.set(quality.shadows, quality.shadows);

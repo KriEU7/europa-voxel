@@ -1,11 +1,15 @@
 // Boat and plane: voxel models + arcade driving.
 // Input: { forward: -1..1 (W/S), turn: -1..1 (A = +1), up, down } – booleans for up/down.
 import * as THREE from 'three';
-import { createVoxels, set, box, buildGeometry } from './voxel.js';
+import { createVoxels, set, box, buildGeometry, material } from './voxel.js';
+import { M, classify } from './textures.js';
+
+// Wood stays wood, everything else is painted (the balloon envelope is cloth).
+const painted = (hex) => (classify(hex) === M.WOOD ? M.WOOD : M.PAINT);
+const cloth = (hex) => (classify(hex) === M.WOOD ? M.WOOD : M.FABRIC);
 import { WATER_LEVEL, waveAt } from './world.js';
 import { hitTest } from './physics.js';
 
-const material = new THREE.MeshLambertMaterial({ vertexColors: true });
 const lerp = (a, b, k) => a + (b - a) * k;
 
 // ---- Models (geometry built once, shared by every boat / plane) ------------------
@@ -43,7 +47,7 @@ function buildBoat() {
   box(v, -1, 5, -3, 0, 6, -3, '#555555');
   box(v, -1, 9, 16, -1, 13, 16, '#d9d9d9'); // little mast
   box(v, 0, 11, 16, 2, 12, 16, '#f2c230');
-  const g = buildGeometry(v, 0.2);
+  const g = buildGeometry(v, 0.2, painted);
   g.translate(0, 0.1, -3);
   return g;
 }
@@ -75,13 +79,13 @@ function buildPlane() {
     box(v, x - 1, 0, 25, x + 1, 2, 27, '#222222');
   }
   box(v, -1, 1, 2, 0, 3, 2, '#222222');
-  const g = buildGeometry(v, 0.18);
+  const g = buildGeometry(v, 0.18, painted);
   g.translate(0, 0, -3.6);
 
   const p = createVoxels();
   box(p, -1, -12, 0, 0, 11, 0, '#3a3a3a');
   box(p, -2, -2, 0, 1, 1, 1, '#c9c9c9');
-  propGeo = buildGeometry(p, 0.12).translate(0, 0, 0);
+  propGeo = buildGeometry(p, 0.12, painted).translate(0, 0, 0);
   return g;
 }
 
@@ -355,7 +359,7 @@ function buildBalloon() {
         if (y === 0 || wall) set(v, x, y, z, (x + y + z) % 2 ? '#9c7a4a' : '#8a6a3e'); // wicker basket
       }
   box(v, -1, 12, -1, 0, 13, 0, '#555555'); // burner
-  return buildGeometry(v, 0.3);
+  return buildGeometry(v, 0.3, cloth);
 }
 
 export function createBalloon(spot) {

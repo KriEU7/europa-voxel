@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { part } from './world.js';
+import { textured } from './textures.js';
 import { freeSpot } from './kiosks.js';
 import { createCharacter } from './models/character.js';
 import { MISSIONS, COUNTRIES } from './data/facts.js';
@@ -36,8 +37,8 @@ function goalModel() {
   const net = [box(5, 2.3, 0.05, 0, 0, -1.5, '#ffffff'), box(0.05, 2.3, 1.5, -2.5, 0, -0.75, '#ffffff'), box(0.05, 2.3, 1.5, 2.5, 0, -0.75, '#ffffff'), box(5, 0.05, 1.5, 0, 2.28, -0.75, '#ffffff')];
   const group = new THREE.Group();
   group.add(
-    new THREE.Mesh(mergeGeometries(g), new THREE.MeshLambertMaterial({ vertexColors: true })),
-    new THREE.Mesh(mergeGeometries(net), new THREE.MeshLambertMaterial({ vertexColors: true, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })),
+    new THREE.Mesh(mergeGeometries(g), textured()),
+    new THREE.Mesh(mergeGeometries(net), textured({ transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })),
   );
   group.children[0].castShadow = true;
   return group;
@@ -151,7 +152,7 @@ export function createGames({ world, npcs, life, passport, sounds, toast, showCa
   const nl = world.byId.netherlands, hunt = { tulips: [], time: 0, on: false, sign: null };
   const signSpot = freeSpot(world, nl, nl.plaza.r + 4, nl.plaza.r + 14, 2.5);
   if (signSpot) {
-    const post = new THREE.Mesh(mergeGeometries([box(0.15, 1.6, 0.15, 0, 0, 0, '#6b4a30'), box(1.4, 0.9, 0.12, 0, 1.4, 0, '#ffe08a')]), new THREE.MeshLambertMaterial({ vertexColors: true }));
+    const post = new THREE.Mesh(mergeGeometries([box(0.15, 1.6, 0.15, 0, 0, 0, '#6b4a30'), box(1.4, 0.9, 0.12, 0, 1.4, 0, '#ffe08a')]), textured());
     post.position.set(signSpot.x - nl.center.x, signSpot.y, signSpot.z - nl.center.z);
     const icon = emojiSprite('🌷', 1);
     icon.position.set(0, 1.85, 0.1);

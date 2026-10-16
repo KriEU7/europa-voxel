@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { part } from './world.js';
+import { textured } from './textures.js';
 import { createCharacter } from './models/character.js';
 import { FOODS } from './data/facts.js';
 
@@ -53,7 +54,7 @@ function stall(id) {
   g.push(box(3, 2.4, 0.1, 0, 0, -1.05, '#8d6240')); // back wall
   for (let i = 0; i < 6; i++) g.push(part(new THREE.BoxGeometry(0.52, 0.1, 2.6).rotateX(-0.25).translate(-1.3 + i * 0.52, 2.75, -0.05), i % 2 ? b : a));
   for (let i = 0; i < 5; i++) g.push(box(0.35, 0.25, 0.35, -1 + i * 0.5, 1.22, 0.4, ['#e0a85a', '#c97b3c', '#f2d29b'][i % 3])); // food on the counter
-  const m = new THREE.Mesh(mergeGeometries(g), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const m = new THREE.Mesh(mergeGeometries(g), textured());
   m.castShadow = m.receiveShadow = true;
   const group = new THREE.Group();
   const s = sign(`${FOODS[id].icon} ${FOODS[id].food}`, a);

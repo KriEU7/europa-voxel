@@ -171,7 +171,7 @@ export function createSky(scene) {
       stars.position.copy(camera.position);
 
       // Windows and street lamps light up when it gets dark.
-      GLOW.emissive.setRGB(1, 0.78, 0.4).multiplyScalar(Math.max(this.night, wet * 0.3) * 1.3);
+      GLOW.emissive.setRGB(1, 0.78, 0.4).multiplyScalar(Math.max(this.night, wet * 0.3) * 2.6);
 
       // Rain
       rain.visible = wet > 0.02;
