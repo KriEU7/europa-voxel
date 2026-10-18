@@ -14,19 +14,20 @@ const AWNING = {
 const box = (w, h, d, x, y, z, c) => part(new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z), c);
 
 // An empty, flat place at distance rMin..rMax from the plaza, `clear` metres from any collider.
+// y is the real ground height there (the lowest point under a ~1.6 m footprint).
 export function freeSpot(world, isl, rMin, rMax, clear, tries = 200) {
   const p = isl.plaza;
   for (let i = 0; i < tries; i++) {
     const a = Math.random() * Math.PI * 2, d = rMin + Math.random() * (rMax - rMin);
     const x = p.x + Math.sin(a) * d, z = p.z + Math.cos(a) * d, y = world.surfaceAt(x, z);
     if (y < 1.8 || isl.zone(x, z) || !isl.isLand(x, z)) continue;
-    const ys = [[-1.5, 0], [1.5, 0], [0, -1.5], [0, 1.5]].map(([dx, dz]) => world.surfaceAt(x + dx, z + dz));
-    if (Math.max(...ys) - Math.min(...ys) > 1) continue;
+    const ys = [[0, 0], [-1.6, 0], [1.6, 0], [0, -1.6], [0, 1.6], [-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]].map(([dx, dz]) => world.surfaceAt(x + dx, z + dz));
+    if (Math.max(...ys) - Math.min(...ys) > 0.6) continue;
     const far = isl.colliders.every((c) =>
       c.r !== undefined
         ? Math.hypot(x - c.x, z - c.z) - c.r > clear
         : Math.hypot(Math.max(c.x0 - x, 0, x - c.x1), Math.max(c.z0 - z, 0, z - c.z1)) > clear);
-    if (far) return { x, y, z };
+    if (far) return { x, y: Math.min(...ys) - 0.05, z }; // the lowest point: what stands here touches the ground all round
   }
   return null;
 }
@@ -71,7 +72,7 @@ export function createKiosks({ world }) {
     if (!spot || !FOODS[id]) continue;
     const p = isl.plaza, heading = Math.atan2(p.x - spot.x, p.z - spot.z); // the counter looks at the plaza
     const group = stall(id);
-    group.position.set(spot.x - isl.center.x, spot.y - 0.1, spot.z - isl.center.z);
+    group.position.set(spot.x - isl.center.x, spot.y, spot.z - isl.center.z);
     group.rotation.y = heading;
     const cook = createCharacter({ hairStyle: 'short', bottom: 'long', hat: 'chef', hatColor: '#ffffff', top: 'apron', shirt: '#f4f1ea', pants: '#3a3a3a', skin: '#e0ac80', seed: 7 + isl.cfg.seed });
     cook.group.position.set(0, 0, -0.45);

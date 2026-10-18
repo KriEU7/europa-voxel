@@ -29,6 +29,7 @@ function load() {
 export function createPassport({ sounds, hooks, onChange }) {
   const fresh = () => ({ stamps: {}, facts: [], people: [], eggs: [], foods: [], missions: {}, medals: [], playSeconds: 0, finaleSeen: false });
   let data = { ...fresh(), ...load() };
+  data.medals = data.medals.filter((m) => !m.startsWith('penalty-')); // old saves: the penalty kicks are gone
   const save = () => {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* private mode: progress not saved */ }
     onChange?.();

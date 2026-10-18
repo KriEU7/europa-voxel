@@ -1,13 +1,14 @@
 // Boat and plane: voxel models + arcade driving.
 // Input: { forward: -1..1 (W/S), turn: -1..1 (A = +1), up, down } – booleans for up/down.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createVoxels, set, box, buildGeometry, material } from './voxel.js';
 import { M, classify } from './textures.js';
 
 // Wood stays wood, everything else is painted (the balloon envelope is cloth).
 const painted = (hex) => (classify(hex) === M.WOOD ? M.WOOD : M.PAINT);
 const cloth = (hex) => (classify(hex) === M.WOOD ? M.WOOD : M.FABRIC);
-import { WATER_LEVEL, waveAt } from './world.js';
+import { WATER_LEVEL, waveAt, part } from './world.js';
 import { hitTest } from './physics.js';
 
 const lerp = (a, b, k) => a + (b - a) * k;
@@ -338,7 +339,7 @@ export function createPlane(spot) {
 // ---- Hot air balloon ------------------------------------------------------------------
 // Slow and panoramic: Space = burner (go up), Shift = let air out (go down), W/S and A/D = drift and turn.
 
-let balloonGeo;
+let balloonGeo, ropeGeo;
 function buildBalloon() {
   const v = createVoxels();
   const STRIPES = ['#e53935', '#fdd835', '#1e88e5', '#ffffff'];
@@ -351,7 +352,6 @@ function buildBalloon() {
         const a = Math.atan2(z, x) / (Math.PI * 2) + 0.5;
         set(v, x, y + 28, z, STRIPES[Math.floor(a * 12) % 4]);
       }
-  for (let y = 14; y <= 17; y++) for (const [x, z] of [[-4, -4], [3, -4], [-4, 3], [3, 3]]) set(v, x + (x < 0 ? (17 - y) * 0.5 : -(17 - y) * 0.5) | 0, y, z, '#5a3a20'); // ropes
   for (let x = -4; x <= 3; x++)
     for (let z = -4; z <= 3; z++)
       for (let y = 0; y <= 4; y++) {
@@ -362,13 +362,37 @@ function buildBalloon() {
   return buildGeometry(v, 0.3, cloth);
 }
 
+// Four ropes from the corners of the basket up to the bottom ring of the envelope, plus the
+// short bars that hang the burner on them. Same units as buildBalloon() (voxel size 0.3).
+function buildRopes() {
+  const rope = (a, b, r = 0.045) => {
+    const dir = new THREE.Vector3().subVectors(b, a), len = dir.length();
+    return part(
+      new THREE.CylinderGeometry(r, r, len, 5)
+        .applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()))
+        .translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2),
+      '#5a3a20', false, M.WOOD,
+    );
+  };
+  const BASKET_TOP = 1.5, RING = 5.55, BURNER = new THREE.Vector3(0, 3.9, 0); // ring: inside the lowest envelope layer
+  const g = [];
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const a = new THREE.Vector3(sx * 1.05, BASKET_TOP - 0.1, sz * 1.05); // basket corner post
+    const b = new THREE.Vector3(0.15 + sx * 1.25, RING, 0.15 + sz * 1.25); // envelope ring
+    g.push(rope(a, b));
+    g.push(rope(BURNER, a.clone().lerp(b, (BURNER.y - a.y) / (b.y - a.y)), 0.035)); // burner frame
+  }
+  return mergeGeometries(g);
+}
+
 export function createBalloon(spot) {
   balloonGeo ??= buildBalloon();
+  ropeGeo ??= buildRopes();
   const group = new THREE.Group();
-  const body = mesh(balloonGeo);
+  const body = mesh(balloonGeo), ropes = mesh(ropeGeo);
   const flame = new THREE.Mesh(new THREE.ConeGeometry(0.25, 1, 6), new THREE.MeshBasicMaterial({ color: '#ffb02e' }));
   flame.position.set(-0.15, 4.3, -0.15);
-  group.add(body, flame);
+  group.add(body, ropes, flame); // one group: envelope, ropes and basket always move together
   const pos = new THREE.Vector3(spot.x, spot.y, spot.z);
   const vel = new THREE.Vector2();
   let heading = spot.heading ?? 0, vy = 0, onGround = true;

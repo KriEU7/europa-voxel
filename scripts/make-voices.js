@@ -12,9 +12,10 @@ const only = args.find((a) => a.startsWith('--only='))?.slice(7);
 const force = args.includes('--force');
 
 // Kokoro English voices: a = American, b = British; f = female, m = male.
+// Not af_nicole: it is a whispering voice (Jana, the guide in Germany, sounded like she was whispering).
 const GUIDE_VOICE = {
   'Guide Sophie': 'af_heart', 'Guide Lotte': 'bf_emma', 'Guide Anouk': 'af_bella', 'Guide Charlotte': 'bf_isabella',
-  'Guide Jana': 'af_nicole', 'Guide Marta': 'af_sarah', 'Guide Francesca': 'af_aoede', 'Guide Katerina': 'bf_alice',
+  'Guide Jana': 'af_kore', 'Guide Marta': 'af_sarah', 'Guide Francesca': 'af_aoede', 'Guide Katerina': 'bf_alice',
 };
 const PEOPLE_VOICE = {
   france: { m: 'am_michael', f: 'af_jessica' },
@@ -41,6 +42,14 @@ for (const [country, list] of Object.entries(QUESTIONS))
     for (const g of ['m', 'f']) jobs.push({ file: `${country}-q${i + 1}-${g}`, text: item.a, voice: PEOPLE_VOICE[country][g] });
   });
 
+// Same loudness for every voice: some Kokoro voices come out much quieter than others.
+function normalize(samples, rms = 0.085) { // ≈ -21 dBFS, like most of the voices in public/voices
+  let sum = 0, peak = 0;
+  for (const s of samples) (sum += s * s), (peak = Math.max(peak, Math.abs(s)));
+  const k = Math.min(rms / (Math.sqrt(sum / samples.length) || 1), 0.95 / (peak || 1));
+  return samples.map((s) => s * k);
+}
+
 // Float samples -> mp3 (mono, 64 kbit/s)
 function toMp3(samples, rate) {
   const enc = new Mp3Encoder(1, rate, 64);
@@ -62,7 +71,7 @@ if (todo.length) {
     // Kokoro reads some symbols oddly: help it a bit.
     const text = job.text.replace(/¡/g, '').replace(/–/g, ',');
     const audio = await tts.generate(text, { voice: job.voice, speed: 0.95 });
-    writeFileSync(`${OUT}/${job.file}.mp3`, toMp3(audio.audio, audio.sampling_rate));
+    writeFileSync(`${OUT}/${job.file}.mp3`, toMp3(normalize(audio.audio), audio.sampling_rate));
     const done = n + 1, eta = ((Date.now() - start) / done) * (todo.length - done) / 60000;
     console.log(`[${done}/${todo.length}] ${job.file}.mp3 (${job.voice})  ~${eta.toFixed(0)} min left`);
   }

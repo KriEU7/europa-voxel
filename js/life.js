@@ -1,11 +1,9 @@
 // Little life on every island: pigeons that fly away when you get close, seagulls in the sky,
-// butterflies on the flowers, fish jumping out of the sea and a beach ball to kick around.
+// butterflies on the flowers and fish jumping out of the sea.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { part, WATER_LEVEL } from './world.js';
 import { textured } from './textures.js';
-import { resolve } from './physics.js';
-import { freeSpot } from './kiosks.js';
 
 const MAT = textured();
 const box = (w, h, d, x, y, z, c) => part(new THREE.BoxGeometry(w, h, d).translate(x, y, z), c);
@@ -46,11 +44,6 @@ const dolphin = () => mesh([
   box(0.12, 0.6, 0.5, 0, 0.55, -0.1, '#5f7f98'), box(0.25, 0.3, 0.8, 0, 0.05, -1.5, '#6f8fa8'), box(1.1, 0.1, 0.4, 0, 0.05, -1.9, '#5f7f98'), // fin, tail
   box(0.72, 0.12, 0.12, 0, 0.15, 0.95, '#1a1a1a'), // eyes
 ]);
-
-function beachBall(r) {
-  const cols = ['#e53935', '#ffffff', '#1e88e5', '#fdd835'];
-  return mesh(cols.map((c, i) => part(new THREE.SphereGeometry(r, 3, 6, (i * Math.PI) / 2, Math.PI / 2), c)));
-}
 
 export function createLife({ world, scene, sounds }) {
   const islands = world.islands.map((isl) => {
@@ -102,16 +95,7 @@ export function createLife({ world, scene, sounds }) {
       return { m, wait: rnd(1, 8), t: 0, from: new THREE.Vector3(), dir: 0 };
     });
 
-    // A beach ball near the plaza.
-    let ball = null;
-    const spot = freeSpot(world, isl, p.r + 4, p.r + 12, 1.5);
-    if (spot) {
-      const m = beachBall(0.45);
-      m.castShadow = true;
-      group.add(m);
-      ball = { m, pos: new THREE.Vector3(spot.x, spot.y + 0.45, spot.z), vel: new THREE.Vector3(), r: 0.45 };
-    }
-    return { isl, group, pigeons, gulls, butterflies, fishes, ball, pigeonSpot };
+    return { isl, group, pigeons, gulls, butterflies, fishes, pigeonSpot };
   });
 
   // Dolphins: a little pod that swims and jumps next to the boat in the open sea.
@@ -216,48 +200,6 @@ export function createLife({ world, scene, sounds }) {
           f.wait = rnd(3, 10);
           if (near(f.m.position, 30)) sounds.splash();
         }
-      }
-
-      const B = L.ball;
-      if (B) {
-        const flat = Math.hypot(B.pos.x - pp.x, B.pos.z - pp.z);
-        if (onFoot && flat < B.r + 0.55 && pp.y < B.pos.y + 0.5) { // kick it
-          const k = Math.max(4, speed * 1.5);
-          B.vel.set((B.pos.x - pp.x) / flat, 0, (B.pos.z - pp.z) / flat).multiplyScalar(k);
-          B.vel.y = 2.5 + speed * 0.4;
-          B.pos.x = pp.x + (B.vel.x / k) * (B.r + 0.6);
-          B.pos.z = pp.z + (B.vel.z / k) * (B.r + 0.6);
-          sounds.kick();
-        }
-        const before = B.pos.clone();
-        B.pos.addScaledVector(B.vel, dt);
-        B.vel.y -= 20 * dt;
-        const g = world.surfaceAt(B.pos.x, B.pos.z);
-        if (g < WATER_LEVEL + 0.4) { // never into the sea: bounce back
-          B.pos.x = before.x;
-          B.pos.z = before.z;
-          B.vel.x *= -0.6;
-          B.vel.z *= -0.6;
-        }
-        const foot = new THREE.Vector3(B.pos.x, B.pos.y - B.r, B.pos.z);
-        resolve(foot, B.r, world.collidersNear(B.pos.x, B.pos.z));
-        const n = new THREE.Vector3(foot.x - B.pos.x, 0, foot.z - B.pos.z);
-        if (n.lengthSq() > 1e-6) { // hit a wall: bounce
-          n.normalize();
-          B.vel.addScaledVector(n, -1.7 * Math.min(0, B.vel.dot(n)));
-          B.pos.x = foot.x;
-          B.pos.z = foot.z;
-        }
-        const floor = world.surfaceAt(B.pos.x, B.pos.z) + B.r;
-        if (B.pos.y <= floor) {
-          B.pos.y = floor;
-          B.vel.y = Math.abs(B.vel.y) > 2 ? -B.vel.y * 0.5 : 0;
-          B.vel.x *= Math.exp(-1.5 * dt);
-          B.vel.z *= Math.exp(-1.5 * dt);
-        }
-        const moved = Math.hypot(B.pos.x - before.x, B.pos.z - before.z);
-        if (moved > 1e-4) B.m.rotateOnWorldAxis(new THREE.Vector3(B.pos.z - before.z, 0, before.x - B.pos.x).normalize(), moved / B.r);
-        B.m.position.copy(B.pos);
       }
     }
 

@@ -446,6 +446,14 @@ function makeIsland(cfg) {
     const ys = [[-r, -r], [r, -r], [-r, r], [r, r], [0, 0]].map(([a, b]) => surface(x + a, z + b));
     return Math.max(...ys) - Math.min(...ys) < 2.4 ? Math.min(...ys) : null;
   };
+  // Real ground height under an object with footprint radius r: the lowest point of the terrain there,
+  // a little lower still, so the base touches the ground everywhere and never floats on a slope.
+  const SINK = 0.08;
+  const groundUnder = (x, z, r = 0) => {
+    let y = surface(x, z);
+    for (let k = 0; r > 0 && k < 8; k++) y = Math.min(y, surface(x + Math.sin((k * Math.PI) / 4) * r, z + Math.cos((k * Math.PI) / 4) * r));
+    return y - SINK;
+  };
 
   // A little village around the monument: houses facing the plaza (only 90° turns, so the collider stays a box).
   // ponytail: greedy placement, nearest to the plaza first; no streets
@@ -479,16 +487,16 @@ function makeIsland(cfg) {
     const x = cfg.plaza.x + Math.sin(a) * R, z = cfg.plaza.z + Math.cos(a) * R;
     const y = surface(x, z);
     if (y < 1.6 || zones.slice(1).some((zn) => zn.dist(x, z) < 3) || fields.some((f) => rectDist(f, x, z) < 2) || (pier && rectDist(pier, x, z) < 3) || inRect(cfg.lawn, x, z)) continue;
-    const [wx, wz] = W(x, z);
+    const [wx, wz] = W(x, z), gy = groundUnder(x, z, k % 2 ? 0.3 : 1);
     if (k % 2) {
-      decor.push(lamp().translate(x, y - 0.1, z));
-      glow.push(lampLight().translate(x, y - 0.1, z));
-      colliders.push({ x: wx, z: wz, r: 0.2, top: y + 3.8 });
+      decor.push(lamp().translate(x, gy, z));
+      glow.push(lampLight().translate(x, gy, z));
+      colliders.push({ x: wx, z: wz, r: 0.2, top: gy + 3.9 });
     } else {
       const heading = a + Math.PI;
-      decor.push(bench().rotateY(heading).translate(x, y - 0.05, z));
-      colliders.push({ x: wx, z: wz, r: 0.6, top: y + 0.6 });
-      benches.push({ x: wx + Math.sin(heading) * 0.15, z: wz + Math.cos(heading) * 0.15, y, heading });
+      decor.push(bench().rotateY(heading).translate(x, gy, z));
+      colliders.push({ x: wx, z: wz, r: 0.6, top: gy + 0.65 });
+      benches.push({ x: wx + Math.sin(heading) * 0.15, z: wz + Math.cos(heading) * 0.15, y: gy + 0.05, heading });
     }
     houses.push({ x, z, r: 2 });
   }
@@ -499,9 +507,10 @@ function makeIsland(cfg) {
       const a = rand(i, 5, cfg.seed) * Math.PI * 2, d = cfg.R * (0.7 + rand(i, 6, cfg.seed) * 0.5);
       const x = Math.sin(a) * d, z = Math.cos(a) * d, y = surface(x, z);
       if (y < WATER_LEVEL + 0.3 || y > 1.35 || blocked(x, z)) continue;
-      decor.push(umbrella(['#e53935', '#fdd835', '#1e88e5', '#43a047', '#fb8c00'][n % 5]).rotateY(a).translate(x, y, z));
+      const gy = groundUnder(x, z, 1.2);
+      decor.push(umbrella(['#e53935', '#fdd835', '#1e88e5', '#43a047', '#fb8c00'][n % 5]).rotateY(a).translate(x, gy, z));
       const [wx, wz] = W(x, z);
-      colliders.push({ x: wx, z: wz, r: 0.15, top: y + 2.6 });
+      colliders.push({ x: wx, z: wz, r: 0.15, top: gy + 2.6 });
       houses.push({ x, z, r: 3 });
       n++;
     }
@@ -512,33 +521,36 @@ function makeIsland(cfg) {
       if (y < 1.8 || blocked(jx, jz) || rand(x, z, cfg.seed) > cfg.density) continue;
       const r = rand(x, z, 3), s = 0.8 + rand(x, z, 4) * 0.6;
       const kind = cfg.trees[Math.floor(rand(x, z, 5) * cfg.trees.length)];
-      decor.push(mergeGeometries(TREES[kind](r)).scale(s, s, s).rotateY(r * 6).translate(jx, y - 0.2, jz));
+      const gy = groundUnder(jx, jz, 0.4 * s);
+      decor.push(mergeGeometries(TREES[kind](r)).scale(s, s, s).rotateY(r * 6).translate(jx, gy - 0.12, jz));
       const [wx, wz] = W(jx, jz);
-      colliders.push({ x: wx, z: wz, r: 0.35 * s, top: y + 4 });
+      colliders.push({ x: wx, z: wz, r: 0.35 * s, top: gy + 4 });
     }
   if (cfg.extras.includes('rocks'))
     for (let i = 0; i < 30; i++) {
       const a = rand(i, 1, cfg.seed) * Math.PI * 2, d = cfg.R * (0.5 + rand(i, 2, cfg.seed) * 0.45);
       const x = Math.sin(a) * d, z = Math.cos(a) * d, y = surface(x, z), s = 0.6 + rand(i, 3) * 1.2;
       if (y < 0 || blocked(x, z)) continue;
-      decor.push(part(new THREE.DodecahedronGeometry(s, 0).translate(x, y + s * 0.3, z), rand(i, 4) < 0.5 ? '#9a9a96' : '#b5b3ab', false, M.ROCK));
+      const gy = groundUnder(x, z, s * 0.8);
+      decor.push(part(new THREE.DodecahedronGeometry(s, 0).translate(x, gy + s * 0.3, z), rand(i, 4) < 0.5 ? '#9a9a96' : '#b5b3ab', false, M.ROCK));
       const [wx, wz] = W(x, z);
-      colliders.push({ x: wx, z: wz, r: s * 0.8, top: y + s * 1.2 });
+      colliders.push({ x: wx, z: wz, r: s * 0.8, top: gy + s * 1.2 });
     }
   for (const f of fields)
     for (let z = f.z0 + 1; z <= f.z1; z += cfg.id === 'france' ? 3 : 2)
       for (let x = f.x0; x <= f.x1; x += cfg.id === 'france' ? 1.4 : 0.9) {
         const y = surface(x, z);
         if (y < 1.2) continue;
-        if (cfg.id === 'france') decor.push(ico(0.7, 0, rand(x, z) < 0.5 ? '#9a6fd0' : '#8a5cc4', 1, 0.8, 1, M.FOLIAGE).translate(x, y + 0.3, z));
-        else decor.push(part(new THREE.BoxGeometry(0.45, 0.5, 0.45).translate(x, y + 0.45, z), ['#e53935', '#fdd835', '#ec407a', '#fb8c00'][Math.floor(z / 2) % 4 & 3]));
+        if (cfg.id === 'france') decor.push(ico(0.7, 0, rand(x, z) < 0.5 ? '#9a6fd0' : '#8a5cc4', 1, 0.8, 1, M.FOLIAGE).translate(x, groundUnder(x, z, 0.6) + 0.38, z));
+        else decor.push(part(new THREE.BoxGeometry(0.45, 0.5, 0.45).translate(x, groundUnder(x, z, 0.3) + 0.25, z), ['#e53935', '#fdd835', '#ec407a', '#fb8c00'][Math.floor(z / 2) % 4 & 3]));
       }
   if (cfg.extras.includes('hedges'))
     for (let z = 6; z <= 40; z += 2.5)
       for (const x of [cfg.lawn.x0 + 1, cfg.lawn.x1 - 1]) {
-        decor.push(part(new THREE.BoxGeometry(1.4, 1.2, 1.4).translate(x, cfg.lawn.h + 0.6, z), '#2f7a32'));
+        const gy = groundUnder(x, z, 0.7);
+        decor.push(part(new THREE.BoxGeometry(1.4, 1.2, 1.4).translate(x, gy + 0.6, z), '#2f7a32'));
         const [wx, wz] = W(x, z);
-        colliders.push({ x0: wx - 0.7, z0: wz - 0.7, x1: wx + 0.7, z1: wz + 0.7, top: cfg.lawn.h + 1.2 });
+        colliders.push({ x0: wx - 0.7, z0: wz - 0.7, x1: wx + 0.7, z1: wz + 0.7, top: gy + 1.2 });
       }
 
   // Small stuff on the grass: tufts, bushes and flowers (walk-through, no colliders).
@@ -550,12 +562,15 @@ function makeIsland(cfg) {
       if (r > 0.16) continue;
       const y = surface(jx, jz);
       if (y < 1.7 || blocked(jx, jz, 1) || zoneAt(jx, jz)) continue;
-      if (r < 0.08) decor.push(part(new THREE.ConeGeometry(0.3, 0.7, 4).translate(jx, y + 0.25, jz), rand(x, z, 24) < 0.5 ? '#3f8f3a' : '#57a845'));
+      if (r < 0.08) decor.push(part(new THREE.ConeGeometry(0.3, 0.7, 4).translate(jx, groundUnder(jx, jz, 0.3) + 0.35, jz), rand(x, z, 24) < 0.5 ? '#3f8f3a' : '#57a845'));
       else if (r < 0.135) {
         const c = FLOWERS[Math.floor(rand(x, z, 25) * FLOWERS.length)];
-        for (let k = 0; k < 5; k++) decor.push(boxAt(0.3, 0.3, 0.3, jx + Math.sin(k * 2.5) * 0.6, y + 0.1 + (k % 2) * 0.12, jz + Math.cos(k * 2.5) * 0.6, c));
+        for (let k = 0; k < 5; k++) { // every flower on the ground right under it
+          const fx = jx + Math.sin(k * 2.5) * 0.6, fz = jz + Math.cos(k * 2.5) * 0.6;
+          decor.push(boxAt(0.3, 0.3 + (k % 2) * 0.12, 0.3, fx, groundUnder(fx, fz, 0.15), fz, c));
+        }
         flowerSpots.push(W(jx, jz));
-      } else decor.push(ico(0.8, 0, '#3d8a35', 1, 0.7, 1).translate(jx, y + 0.3, jz), ico(0.55, 0, '#4a9a3e', 1, 0.8, 1).translate(jx + 0.6, y + 0.3, jz + 0.3));
+      } else decor.push(ico(0.8, 0, '#3d8a35', 1, 0.7, 1).translate(jx, groundUnder(jx, jz, 0.7) + 0.3, jz), ico(0.55, 0, '#4a9a3e', 1, 0.8, 1).translate(jx + 0.6, groundUnder(jx + 0.6, jz + 0.3, 0.5) + 0.3, jz + 0.3));
     }
 
   const group = new THREE.Group();
@@ -567,9 +582,10 @@ function makeIsland(cfg) {
   // Flag of the country
   const flag = voxelFlag(cfg.id);
   const [fx, fz] = cfg.flag ?? [cfg.plaza.x + cfg.plaza.r + 2, cfg.plaza.z];
-  flag.position.set(fx, surface(fx, fz), fz);
+  const flagY = groundUnder(fx, fz, 0.15);
+  flag.position.set(fx, flagY, fz);
   group.add(flag);
-  colliders.push({ x: fx + ox, z: fz + oz, r: 0.2, top: surface(fx, fz) + 7.2 });
+  colliders.push({ x: fx + ox, z: fz + oz, r: 0.2, top: flagY + 7.2 });
 
   const site = (s) => s && { x: s.x + ox, z: s.z + oz, y: s.h, r: s.r };
   return {
@@ -579,7 +595,7 @@ function makeIsland(cfg) {
     radius: SIZE * 1.1,
     plaza: site(cfg.plaza),
     sites: [site(cfg.plaza), site(s2)].filter(Boolean),
-    spots: spots.map(([x, z]) => ({ x: x + ox, z: z + oz, y: surface(x, z) })),
+    spots: spots.map(([x, z]) => ({ x: x + ox, z: z + oz, y: groundUnder(x, z, 2.6) })),
     egg: { x: ex + ox, z: ez + oz, y: eggH },
     surface: (x, z) => surface(x - ox, z - oz),
     zone: (x, z) => zoneAt(x - ox, z - oz),

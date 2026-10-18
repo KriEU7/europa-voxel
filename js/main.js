@@ -221,7 +221,7 @@ function toast(text) {
 }
 const album = createAlbum({ sounds, hooks: { ...overlayHooks, toast } });
 let photoRequest = false;
-const games = createGames({ world, npcs, life, passport, sounds, toast, showCard });
+const games = createGames({ world, npcs, passport, sounds, toast, showCard });
 // What is in the photo? The monument you are looking at, otherwise where you are.
 function photoCaption() {
   const dir = camera.getWorldDirection(new THREE.Vector3()), len = Math.hypot(dir.x, dir.z) || 1;

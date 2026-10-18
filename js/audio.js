@@ -113,11 +113,6 @@ export const sounds = {
     const t = ctx.currentTime;
     for (let i = 0; i < 8; i++) noise(t + i * 0.05, 0.05, { freq: 1200, q: 0.7, gain: 0.25 });
   },
-  kick() {
-    if (!ctx) return;
-    tone(160, ctx.currentTime, 0.12, { type: 'sine', gain: 0.35, slideTo: 90 });
-    noise(ctx.currentTime, 0.06, { freq: 900, gain: 0.2 });
-  },
   eat() { // crunch crunch
     if (!ctx) return;
     const t = ctx.currentTime;
@@ -128,12 +123,6 @@ export const sounds = {
     const t = ctx.currentTime;
     noise(t, 0.04, { freq: 3000, gain: 0.4 });
     noise(t + 0.09, 0.06, { freq: 1800, gain: 0.3 });
-  },
-  cheer() { // goal! a crowd and a little fanfare
-    if (!ctx) return;
-    const t = ctx.currentTime;
-    noise(t, 1.4, { freq: 1100, q: 0.4, gain: 0.35 });
-    [67, 72, 76, 79].forEach((n, i) => tone(midi(n), t + i * 0.08, 0.3, { type: 'square', gain: 0.05 }));
   },
   pickup() {
     if (!ctx) return;
