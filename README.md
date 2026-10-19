@@ -34,6 +34,8 @@ npm run dist       # .exe per Windows in release/ (in locale)
 npm run make-voices  # rigenera le voci inglesi con Kokoro TTS
 ```
 
+Le voci si possono generare anche su GitHub, senza installare niente: **Actions → Make voices → Run workflow**, scrivi i prefissi dei file da rifare (es. `brandenburg neuschwanstein`). Il workflow salva gli mp3 su `main` e fa partire una nuova release.
+
 Tutti i testi del gioco (guide, test, abitanti) sono in [`js/data/facts.js`](js/data/facts.js). Gli easter egg sono in [`js/models/eggs.js`](js/models/eggs.js). La documentazione completa del progetto è in [`BRIEFING.md`](BRIEFING.md).
 
 ## Screenshot

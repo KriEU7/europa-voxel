@@ -1,0 +1,51 @@
+# Makes voice lines on GitHub with Kokoro TTS (scripts/make-voices.js), commits the mp3s to main
+# and starts a new release. Actions → Make voices → Run workflow, then write which files to redo.
+name: Make voices
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'File name prefixes to make, separated by spaces (e.g. "brandenburg neuschwanstein")'
+        required: true
+      force:
+        description: 'Redo files that already exist'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency: voices
+
+jobs:
+  voices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1 # not needed to make voices
+      - name: Make the voices
+        env:
+          ONLY: ${{ inputs.only }}
+          FORCE: ${{ inputs.force && '--force' || '' }}
+        run: for p in $ONLY; do node scripts/make-voices.js "--only=$p" $FORCE; done
+      - name: Commit and start a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          git add public/voices
+          if git diff --cached --quiet; then echo "No voice changed."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Voices made on GitHub: $ONLY"
+          git push origin HEAD:main
+          # A push made by this workflow does not start other workflows by itself.
+          gh workflow run release.yml --ref main
